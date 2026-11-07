@@ -1,183 +1,204 @@
-import type { MandateView, Proposal, ProposalInput } from "@leash/shared";
+import { z } from "zod";
+import type { Database as DatabaseType } from "better-sqlite3";
+import {
+  ERROR_CODES,
+  type MandateView,
+  type Proposal,
+  type ProposalInput,
+  type ProposalStatus,
+  centsToDollars,
+  dollarsToCents,
+  hasAtMostTwoDecimals,
+} from "@leash/shared";
+import { newId } from "../ids.js";
+import { AppError } from "../http/errors.js";
+import { getMandate } from "../mandate/storage.js";
+import { writeAudit } from "../audit/storage.js";
+import { evaluate } from "../policy/evaluate.js";
+import { getSpent } from "./spent.js";
+import { saveProposal } from "./storage.js";
+import * as paymentStub from "./payment-stub.js";
 
-export const fixedAllowProposal: Proposal = {
-  id: "proposal_allow",
-  createdAt: "2026-11-07T12:00:00.000Z",
-  items: [
-    {
-      productId: "item-1",
-      title: "Hiking Socks",
-      merchant: "TrailGear",
-      category: "Apparel",
-      unitPrice: 20,
-      quantity: 1,
-      url: "https://example.com/socks",
-    },
-  ],
-  shipTo: {
-    name: "Jane Doe",
-    line1: "123 Trail Way",
-    city: "Portland",
-    region: "OR",
-    postalCode: "97201",
-    country: "US",
-  },
-  currency: "USD",
-  agentReasoning: "Found hiking socks within budget and allowed merchants",
-  sourceUrls: ["https://example.com/socks"],
-  total: 20,
-  status: "approved",
-  policy: {
-    decision: "allow",
-    results: [
-      { rule: "signature_valid", passed: true, severity: "block", message: "Signature valid" },
-      { rule: "not_expired", passed: true, severity: "block", message: "Mandate active" },
-      { rule: "currency_match", passed: true, severity: "block", message: "Currency matches" },
-      { rule: "merchant_allowed", passed: true, severity: "block", message: "Merchant allowed" },
-      { rule: "category_allowed", passed: true, severity: "block", message: "Category allowed" },
-      { rule: "per_item_cap", passed: true, severity: "block", message: "Within per-item cap" },
-      { rule: "max_quantity", passed: true, severity: "block", message: "Within max quantity" },
-      { rule: "ship_to_matches", passed: true, severity: "block", message: "Ship-to matches" },
-      { rule: "within_budget", passed: true, severity: "block", message: "Within budget" },
-      { rule: "approval_threshold", passed: true, severity: "ask", message: "Below approval threshold" },
-    ],
-    evaluatedAt: "2026-11-07T12:00:00.000Z",
-  },
-  payment: {
-    mode: "mock",
-    orderId: "order_allow",
-  },
-};
+let currentDb: DatabaseType | null = null;
+let currentSigningSecret: string | null = null;
 
-export const fixedAskProposal: Proposal = {
-  id: "proposal_ask",
-  createdAt: "2026-11-07T12:00:00.000Z",
-  items: [
-    {
-      productId: "item-2",
-      title: "Hiking Boots",
-      merchant: "TrailGear",
-      category: "Footwear",
-      unitPrice: 65,
-      quantity: 1,
-      url: "https://example.com/boots",
-    },
-  ],
-  shipTo: {
-    name: "Jane Doe",
-    line1: "123 Trail Way",
-    city: "Portland",
-    region: "OR",
-    postalCode: "97201",
-    country: "US",
-  },
-  currency: "USD",
-  agentReasoning: "Boots exceed the 50 USD threshold requiring user approval",
-  sourceUrls: ["https://example.com/boots"],
-  total: 65,
-  status: "needs_approval",
-  policy: {
-    decision: "ask",
-    results: [
-      { rule: "signature_valid", passed: true, severity: "block", message: "Signature valid" },
-      { rule: "not_expired", passed: true, severity: "block", message: "Mandate active" },
-      { rule: "currency_match", passed: true, severity: "block", message: "Currency matches" },
-      { rule: "merchant_allowed", passed: true, severity: "block", message: "Merchant allowed" },
-      { rule: "category_allowed", passed: true, severity: "block", message: "Category allowed" },
-      { rule: "per_item_cap", passed: true, severity: "block", message: "Within per-item cap" },
-      { rule: "max_quantity", passed: true, severity: "block", message: "Within max quantity" },
-      { rule: "ship_to_matches", passed: true, severity: "block", message: "Ship-to matches" },
-      { rule: "within_budget", passed: true, severity: "block", message: "Within budget" },
-      { rule: "approval_threshold", passed: false, severity: "ask", message: "Total exceeds approval threshold of 50.00 USD" },
-    ],
-    evaluatedAt: "2026-11-07T12:00:00.000Z",
-  },
-};
+export function initProposalService(
+  db: DatabaseType,
+  signingSecret?: string,
+): void {
+  currentDb = db;
+  currentSigningSecret = signingSecret ?? null;
+}
 
-export const fixedBlockProposal: Proposal = {
-  id: "proposal_block",
-  createdAt: "2026-11-07T12:00:00.000Z",
-  items: [
-    {
-      productId: "item-3",
-      title: "Malicious Deal Backpack",
-      merchant: "ShadyMerchant",
-      category: "Gear",
-      unitPrice: 30,
-      quantity: 10,
-      url: "https://shady.example.com/deal",
-    },
-  ],
-  shipTo: {
-    name: "Attacker",
-    line1: "999 Rogue Rd",
-    city: "Elsewhere",
-    region: "CA",
-    postalCode: "90001",
-    country: "US",
-  },
-  currency: "USD",
-  agentReasoning: "Proposed purchase from shady page with high quantity and modified shipping address",
-  sourceUrls: ["https://shady.example.com/deal"],
-  total: 300,
-  status: "blocked",
-  policy: {
-    decision: "block",
-    results: [
-      { rule: "signature_valid", passed: true, severity: "block", message: "Signature valid" },
-      { rule: "not_expired", passed: true, severity: "block", message: "Mandate active" },
-      { rule: "currency_match", passed: true, severity: "block", message: "Currency matches" },
-      { rule: "merchant_allowed", passed: false, severity: "block", message: "Merchant ShadyMerchant is not in allowed merchants" },
-      { rule: "category_allowed", passed: true, severity: "block", message: "Category allowed" },
-      { rule: "per_item_cap", passed: true, severity: "block", message: "Within per-item cap" },
-      { rule: "max_quantity", passed: false, severity: "block", message: "Quantity 10 exceeds maximum allowed quantity of 2" },
-      { rule: "ship_to_matches", passed: false, severity: "block", message: "Shipping address does not match mandate shipping address" },
-      { rule: "within_budget", passed: true, severity: "block", message: "Within budget" },
-      { rule: "approval_threshold", passed: false, severity: "ask", message: "Total exceeds approval threshold" },
-    ],
-    evaluatedAt: "2026-11-07T12:00:00.000Z",
-  },
-};
+const nonBlankString = (fieldName: string) =>
+  z
+    .string({ required_error: `${fieldName} is required` })
+    .transform((s) => s.trim())
+    .refine((s) => s.length > 0, {
+      message: `${fieldName} must not be empty`,
+    });
+
+const addressSchema = z.object({
+  name: nonBlankString("shipTo.name"),
+  line1: nonBlankString("shipTo.line1"),
+  city: nonBlankString("shipTo.city"),
+  region: nonBlankString("shipTo.region"),
+  postalCode: nonBlankString("shipTo.postalCode"),
+  country: nonBlankString("shipTo.country"),
+});
+
+const proposalItemSchema = z.object({
+  productId: nonBlankString("productId"),
+  title: nonBlankString("title"),
+  merchant: nonBlankString("merchant"),
+  category: nonBlankString("category"),
+  unitPrice: z
+    .number({ required_error: "unitPrice is required" })
+    .refine((n) => Number.isFinite(n) && n > 0 && hasAtMostTwoDecimals(n), {
+      message:
+        "unitPrice must be a positive finite number with at most 2 decimal places",
+    }),
+  quantity: z
+    .number({ required_error: "quantity is required" })
+    .refine((n) => Number.isInteger(n) && n >= 1, {
+      message: "quantity must be a whole number of at least 1",
+    }),
+  url: nonBlankString("url"),
+});
+
+const proposalInputSchema = z.object({
+  items: z.array(proposalItemSchema).min(1, "Items must not be empty"),
+  shipTo: addressSchema,
+  currency: nonBlankString("currency"),
+  agentReasoning: z.string({ required_error: "agentReasoning is required" }),
+  sourceUrls: z.array(z.string(), {
+    required_error: "sourceUrls is required",
+  }),
+});
 
 export async function submitProposal(input: ProposalInput): Promise<Proposal> {
-  if (
-    input.agentReasoning?.includes("block") ||
-    input.items.some((item) => item.quantity > 2 || item.merchant.toLowerCase().includes("shady")) ||
-    input.shipTo.name === "Attacker"
-  ) {
-    return fixedBlockProposal;
+  const parseResult = proposalInputSchema.safeParse(input);
+  if (!parseResult.success) {
+    throw new AppError(
+      ERROR_CODES.VALIDATION_ERROR,
+      parseResult.error.errors.map((e) => e.message).join("; "),
+    );
   }
-  if (
-    input.agentReasoning?.includes("ask") ||
-    input.items.reduce((acc, item) => acc + item.unitPrice * item.quantity, 0) > 50
-  ) {
-    return fixedAskProposal;
+
+  if (!currentDb) {
+    throw new AppError(
+      ERROR_CODES.INTERNAL_ERROR,
+      "Proposal service is not initialized",
+    );
   }
-  return fixedAllowProposal;
+
+  if (!currentSigningSecret) {
+    throw new AppError(
+      ERROR_CODES.INTERNAL_ERROR,
+      "MANDATE_SIGNING_SECRET is not configured",
+    );
+  }
+
+  const mandate = getMandate(currentDb);
+  if (!mandate) {
+    throw new AppError(ERROR_CODES.NO_MANDATE, "No mandate found");
+  }
+
+  const validated = parseResult.data;
+
+  const totalCents = validated.items.reduce(
+    (sum, item) => sum + dollarsToCents(item.unitPrice) * item.quantity,
+    0,
+  );
+  const total = centsToDollars(totalCents);
+  const spent = getSpent(currentDb);
+
+  const policy = evaluate(
+    validated as unknown as ProposalInput,
+    mandate,
+    {
+      spent,
+      now: new Date(),
+      signingSecret: currentSigningSecret,
+    },
+  );
+
+  let status: ProposalStatus;
+  if (policy.decision === "block") {
+    status = "blocked";
+  } else if (policy.decision === "ask") {
+    status = "needs_approval";
+  } else {
+    status = "approved";
+  }
+
+  const id = newId("prop_");
+  const createdAt = new Date().toISOString();
+
+  const proposal: Proposal = {
+    id,
+    createdAt,
+    total,
+    status,
+    items: validated.items,
+    shipTo: validated.shipTo,
+    currency: validated.currency as "USD",
+    agentReasoning: validated.agentReasoning,
+    sourceUrls: validated.sourceUrls,
+    policy,
+  };
+
+  saveProposal(currentDb, proposal);
+
+  const itemSummary = proposal.items
+    .map((i) => `${i.quantity}x ${i.title}`)
+    .join(", ");
+
+  writeAudit(currentDb, {
+    proposalId: proposal.id,
+    event: "proposal_received",
+    summary: itemSummary,
+    amount: proposal.total,
+    details: {
+      items: proposal.items,
+      shipTo: proposal.shipTo,
+    },
+  });
+
+  writeAudit(currentDb, {
+    proposalId: proposal.id,
+    event: "policy_decision",
+    summary: `Policy decision: ${policy.decision}`,
+    amount: proposal.total,
+    decision: policy.decision,
+    details: {
+      results: policy.results,
+    },
+  });
+
+  if (status === "approved") {
+    await paymentStub.startPayment(proposal);
+  }
+
+  return proposal;
 }
 
 export function getMandateView(): MandateView | null {
+  if (!currentDb) {
+    return null;
+  }
+  const mandate = getMandate(currentDb);
+  if (!mandate) {
+    return null;
+  }
+  const spent = getSpent(currentDb);
+  const remaining = centsToDollars(
+    dollarsToCents(mandate.totalBudget) - dollarsToCents(spent),
+  );
+  const { signature: _sig, ...mandateWithoutSig } = mandate;
   return {
-    id: "mandate_stub_1",
-    owner: "demo-user",
-    currency: "USD",
-    totalBudget: 80,
-    perItemCap: 60,
-    approvalThreshold: 50,
-    allowedCategories: ["Apparel", "Footwear", "Gear"],
-    allowedMerchants: ["TrailGear", "Acme Outdoors"],
-    maxQuantityPerItem: 2,
-    shippingAddress: {
-      name: "Jane Doe",
-      line1: "123 Trail Way",
-      city: "Portland",
-      region: "OR",
-      postalCode: "97201",
-      country: "US",
-    },
-    expiresAt: "2026-12-31T23:59:59.000Z",
-    createdAt: "2026-11-07T12:00:00.000Z",
-    spent: 0,
-    remaining: 80,
+    ...mandateWithoutSig,
+    spent,
+    remaining,
   };
 }

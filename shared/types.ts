@@ -169,3 +169,11 @@ export function dollarsToCents(dollars: number): number {
 export function centsToDollars(cents: number): number {
   return Number((cents / 100).toFixed(2));
 }
+
+export function hasAtMostTwoDecimals(value: number): boolean {
+  if (typeof value !== "number" || !Number.isFinite(value)) {
+    return false;
+  }
+  const rounded = Math.round(value * 100) / 100;
+  return Math.abs(value - rounded) < 1e-9;
+}

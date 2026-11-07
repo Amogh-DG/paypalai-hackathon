@@ -1,47 +1,71 @@
-import express from "express";
+import express, { type Express } from "express";
 import path from "node:path";
-import { mandateRouter } from "./routes/mandate.js";
+import type { Database as DatabaseType } from "better-sqlite3";
+import { createMandateRouter } from "./routes/mandate.js";
 import { chatRouter } from "./routes/chat.js";
-import { proposalsRouter } from "./routes/proposals.js";
-import { decisionRouter } from "./routes/decision.js";
+import { createProposalsRouter } from "./routes/proposals.js";
+import { createDecisionRouter } from "./routes/decision.js";
 import { paypalReturnRouter } from "./routes/paypal-return.js";
 import { paypalCancelRouter } from "./routes/paypal-cancel.js";
 import { mockApproveRouter } from "./routes/mock-approve.js";
 import { webhookRouter } from "./routes/webhook.js";
-import { auditRouter } from "./routes/audit.js";
-import "./db.js";
+import { createAuditRouter } from "./routes/audit.js";
+import { initProposalService } from "./proposals/service.js";
+import { errorHandler } from "./http/errors.js";
+import { createDb } from "./db.js";
 
-export const app = express();
+export function createApp(
+  db: DatabaseType,
+  options?: {
+    signingSecret?: string;
+    beforeErrorRoutes?: (app: Express) => void;
+  },
+): Express {
+  const application = express();
 
-app.use(express.json());
+  initProposalService(db, options?.signingSecret);
 
-app.get("/health", (_req, res) => {
-  res.json({ status: "ok" });
-});
+  application.use(express.json());
 
-app.get("/api/health", (_req, res) => {
-  res.json({ status: "ok" });
-});
-
-app.use("/shady", express.static(path.resolve(process.cwd(), "server/public/shady")));
-
-app.use(mandateRouter);
-app.use(chatRouter);
-app.use(proposalsRouter);
-app.use(decisionRouter);
-app.use(paypalReturnRouter);
-app.use(paypalCancelRouter);
-app.use(mockApproveRouter);
-app.use(webhookRouter);
-app.use(auditRouter);
-
-if (process.env.NODE_ENV === "production") {
-  const webDist = path.resolve(process.cwd(), "web/dist");
-  app.use(express.static(webDist));
-  app.get("*", (req, res, next) => {
-    if (req.path.startsWith("/api") || req.path.startsWith("/shady")) {
-      return next();
-    }
-    res.sendFile(path.join(webDist, "index.html"));
+  application.get("/health", (_req, res) => {
+    res.json({ status: "ok" });
   });
+
+  application.get("/api/health", (_req, res) => {
+    res.json({ status: "ok" });
+  });
+
+  application.use(
+    "/shady",
+    express.static(path.resolve(process.cwd(), "server/public/shady")),
+  );
+
+  application.use(createMandateRouter(db, options?.signingSecret));
+  application.use(chatRouter);
+  application.use(createProposalsRouter(db));
+  application.use(createDecisionRouter(db));
+  application.use(paypalReturnRouter);
+  application.use(paypalCancelRouter);
+  application.use(mockApproveRouter);
+  application.use(webhookRouter);
+  application.use(createAuditRouter(db));
+
+  if (process.env.NODE_ENV === "production") {
+    const webDist = path.resolve(process.cwd(), "web/dist");
+    application.use(express.static(webDist));
+    application.get("*", (req, res, next) => {
+      if (req.path.startsWith("/api") || req.path.startsWith("/shady")) {
+        return next();
+      }
+      res.sendFile(path.join(webDist, "index.html"));
+    });
+  }
+
+  options?.beforeErrorRoutes?.(application);
+
+  application.use(errorHandler);
+
+  return application;
 }
+
+export const app = createApp(createDb(":memory:"));
