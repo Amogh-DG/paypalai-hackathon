@@ -11,7 +11,7 @@ import { AppError } from "../http/errors.js";
 import { rowToProposal, type ProposalRow } from "../proposals/storage.js";
 import { setStatus } from "../proposals/transitions.js";
 import { writeAudit } from "../audit/storage.js";
-import * as paymentStub from "../proposals/payment-stub.js";
+import { startPayment } from "../proposals/payment.js";
 
 const decisionSchema = z.object({
   action: z.enum(["approve", "reject"], {
@@ -88,7 +88,9 @@ export function createDecisionRouter(db: DatabaseType): Router {
         const { action } = decisionSchema.parse(req.body);
         const proposal = handleDecision(db, req.params.id, action);
         if (action === "approve") {
-          await paymentStub.startPayment(proposal);
+          const updatedWithPayment = await startPayment(proposal);
+          res.json(updatedWithPayment);
+          return;
         }
         res.json(proposal);
       } catch (err) {

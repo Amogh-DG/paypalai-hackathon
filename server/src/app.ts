@@ -7,10 +7,12 @@ import { createProposalsRouter } from "./routes/proposals.js";
 import { createDecisionRouter } from "./routes/decision.js";
 import { paypalReturnRouter } from "./routes/paypal-return.js";
 import { paypalCancelRouter } from "./routes/paypal-cancel.js";
-import { mockApproveRouter } from "./routes/mock-approve.js";
+import { createMockApproveRouter } from "./routes/mock-approve.js";
 import { webhookRouter } from "./routes/webhook.js";
 import { createAuditRouter } from "./routes/audit.js";
 import { initProposalService } from "./proposals/service.js";
+import { initPayment } from "./proposals/payment.js";
+import { createPayPalAdapter, type PayPalAdapter } from "./paypal/index.js";
 import { errorHandler } from "./http/errors.js";
 import { createDb } from "./db.js";
 
@@ -18,11 +20,23 @@ export function createApp(
   db: DatabaseType,
   options?: {
     signingSecret?: string;
+    paypalAdapter?: PayPalAdapter;
+    paypalMode?: "mock" | "sandbox" | string;
+    publicBaseUrl?: string;
     beforeErrorRoutes?: (app: Express) => void;
   },
 ): Express {
   const application = express();
 
+  const paypalMode =
+    options?.paypalMode ?? (process.env.PAYPAL_MODE || "mock");
+  const paypalAdapter =
+    options?.paypalAdapter ??
+    createPayPalAdapter(paypalMode, {
+      publicBaseUrl: options?.publicBaseUrl ?? process.env.PUBLIC_BASE_URL,
+    });
+
+  initPayment(db, paypalAdapter);
   initProposalService(db, options?.signingSecret);
 
   application.use(express.json());
@@ -46,7 +60,7 @@ export function createApp(
   application.use(createDecisionRouter(db));
   application.use(paypalReturnRouter);
   application.use(paypalCancelRouter);
-  application.use(mockApproveRouter);
+  application.use(createMockApproveRouter(db, paypalMode));
   application.use(webhookRouter);
   application.use(createAuditRouter(db));
 

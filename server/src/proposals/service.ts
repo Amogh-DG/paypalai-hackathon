@@ -17,7 +17,7 @@ import { writeAudit } from "../audit/storage.js";
 import { evaluate } from "../policy/evaluate.js";
 import { getSpent } from "./spent.js";
 import { saveProposal } from "./storage.js";
-import * as paymentStub from "./payment-stub.js";
+import { startPayment } from "./payment.js";
 
 let currentDb: DatabaseType | null = null;
 let currentSigningSecret: string | null = null;
@@ -177,7 +177,7 @@ export async function submitProposal(input: ProposalInput): Promise<Proposal> {
   });
 
   if (status === "approved") {
-    await paymentStub.startPayment(proposal);
+    return await startPayment(proposal);
   }
 
   return proposal;

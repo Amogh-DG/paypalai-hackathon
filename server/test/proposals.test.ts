@@ -17,7 +17,7 @@ import {
   getMandateView,
 } from "../src/proposals/service.js";
 import { setStatus } from "../src/proposals/transitions.js";
-import * as paymentStub from "../src/proposals/payment-stub.js";
+import * as paymentModule from "../src/proposals/payment.js";
 import { AppError } from "../src/http/errors.js";
 
 const secret = "test-mandate-secret-key-12345";
@@ -106,18 +106,21 @@ describe("proposals service and routes", () => {
 
   it("a valid allowed proposal is stored with status approved, total exact in cents, and audit entries exist", async () => {
     saveMandate(db, createTestMandate());
-    const spy = vi.spyOn(paymentStub, "startPayment");
+    const spy = vi.spyOn(paymentModule, "startPayment");
 
     const proposal = await submitProposal(getValidProposalInput());
 
-    expect(proposal.status).toBe("approved");
+    expect(proposal.status).toBe("awaiting_buyer");
     expect(proposal.total).toBe(20);
+    expect(proposal.payment?.mode).toBe("mock");
+    expect(typeof proposal.payment?.orderId).toBe("string");
+    expect(typeof proposal.payment?.approveUrl).toBe("string");
     expect(spy).toHaveBeenCalledTimes(1);
 
     const stored = getProposal(db, proposal.id);
     expect(stored).not.toBeNull();
     expect(stored?.total).toBe(20);
-    expect(stored?.status).toBe("approved");
+    expect(stored?.status).toBe("awaiting_buyer");
 
     const audits = listAudit(db, 10);
     const received = audits.find((a) => a.event === "proposal_received");
@@ -186,7 +189,7 @@ describe("proposals service and routes", () => {
 
   it("blocks the attack proposal with merchant_allowed, max_quantity, and ship_to_matches failing without calling startPayment", async () => {
     saveMandate(db, createTestMandate());
-    const spy = vi.spyOn(paymentStub, "startPayment");
+    const spy = vi.spyOn(paymentModule, "startPayment");
 
     const attackInput = getValidProposalInput({
       items: [
@@ -306,7 +309,7 @@ describe("proposals service and routes", () => {
 
   it("approving a needs_approval proposal sets approved, writes userDecision and audit, and calls startPayment once", async () => {
     saveMandate(db, createTestMandate({ approvalThreshold: 50 }));
-    const spy = vi.spyOn(paymentStub, "startPayment");
+    const spy = vi.spyOn(paymentModule, "startPayment");
 
     const proposal = await submitProposal(
       getValidProposalInput({
@@ -334,7 +337,7 @@ describe("proposals service and routes", () => {
 
     expect(res.status).toBe(200);
     const body = (await res.json()) as any;
-    expect(body.status).toBe("approved");
+    expect(body.status).toBe("awaiting_buyer");
     expect(body.userDecision?.action).toBe("approve");
     expect(typeof body.userDecision?.decidedAt).toBe("string");
     expect(spy).toHaveBeenCalledTimes(1);
@@ -343,7 +346,7 @@ describe("proposals service and routes", () => {
     expect(getRes.status).toBe(200);
     const getBody = (await getRes.json()) as any;
     expect(getBody.userDecision?.action).toBe("approve");
-    expect(getBody.status).toBe("approved");
+    expect(getBody.status).toBe("awaiting_buyer");
     expect(typeof getBody.userDecision?.decidedAt).toBe("string");
 
     const audits = listAudit(db, 10);
@@ -356,7 +359,7 @@ describe("proposals service and routes", () => {
 
   it("rejecting sets rejected and does not call startPayment", async () => {
     saveMandate(db, createTestMandate({ approvalThreshold: 50 }));
-    const spy = vi.spyOn(paymentStub, "startPayment");
+    const spy = vi.spyOn(paymentModule, "startPayment");
 
     const proposal = await submitProposal(
       getValidProposalInput({
@@ -560,7 +563,10 @@ describe("proposals service and routes", () => {
   });
 
   it("userDecision is stored and returned by GET /api/proposals/:id after an approve and after a reject", async () => {
-    saveMandate(db, createTestMandate({ approvalThreshold: 50 }));
+    saveMandate(
+      db,
+      createTestMandate({ approvalThreshold: 50, totalBudget: 200 }),
+    );
 
     const proposalApprove = await submitProposal(
       getValidProposalInput({
@@ -589,7 +595,7 @@ describe("proposals service and routes", () => {
     expect(resApprove.status).toBe(200);
     const bodyApprove = (await resApprove.json()) as any;
     expect(bodyApprove.userDecision?.action).toBe("approve");
-    expect(bodyApprove.status).toBe("approved");
+    expect(bodyApprove.status).toBe("awaiting_buyer");
     expect(typeof bodyApprove.userDecision?.decidedAt).toBe("string");
 
     const proposalReject = await submitProposal(
@@ -642,7 +648,7 @@ describe("proposals service and routes", () => {
     expect(bad2[0]).toContain("Forbidden import of proposals internals");
 
     const bad3 = checkAgentSource(
-      'import { startPayment } from "../proposals/payment-stub.js";',
+      'import { startPayment } from "../proposals/payment.js";',
     );
     expect(bad3.length).toBeGreaterThan(0);
     expect(bad3[0]).toContain("Forbidden import of proposals internals");
