@@ -1,0 +1,31 @@
+{
+  "name": "leash",
+  "version": "0.1.0",
+  "private": true,
+  "engines": {
+    "node": ">=20.0.0"
+  },
+  "workspaces": [
+    "shared",
+    "server",
+    "web"
+  ],
+  "scripts": {
+    "check": "npm run typecheck && npm run test && npm run lint && npm run boundary-check",
+    "typecheck": "tsc -b",
+    "test": "npm run test --workspace=@leash/server",
+    "lint": "eslint .",
+    "boundary-check": "node boundary-check.mjs",
+    "build": "npm run build --workspace=@leash/web",
+    "start": "npm run start --workspace=@leash/server"
+  },
+  "devDependencies": {
+    "@eslint/js": "^9.16.0",
+    "@types/node": "^20.17.19",
+    "@typescript-eslint/parser": "^8.18.0",
+    "eslint": "^9.16.0",
+    "prettier": "^3.4.2",
+    "typescript": "^5.7.3",
+    "typescript-eslint": "^8.18.0"
+  }
+}
