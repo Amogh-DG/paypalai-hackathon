@@ -16,6 +16,7 @@ import {
   createPayPalAdapter,
   type PayPalAdapter,
   MockPayPalAdapter,
+  SandboxPayPalAdapter,
 } from "./paypal/index.js";
 import { errorHandler } from "./http/errors.js";
 import { createDb } from "./db.js";
@@ -45,6 +46,14 @@ export function createApp(
   if (paypalAdapter instanceof MockPayPalAdapter && !paypalAdapter.hasDb()) {
     paypalAdapter.setDb(db);
   }
+  if (
+    paypalAdapter instanceof SandboxPayPalAdapter &&
+    !paypalAdapter.hasDb()
+  ) {
+    paypalAdapter.setDb(db);
+  }
+
+  db.exec("DROP TRIGGER IF EXISTS set_sandbox_payment_mode;");
 
   initPayment(db, paypalAdapter);
   initProposalService(db, options?.signingSecret, options?.clock);

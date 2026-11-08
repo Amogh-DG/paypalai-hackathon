@@ -42,7 +42,7 @@ export async function startPayment(proposal: Proposal): Promise<Proposal> {
     setStatus("approved", "awaiting_buyer");
 
     const payment: PaymentInfo = {
-      mode: "mock",
+      mode: adapter.mode,
       orderId,
       approveUrl,
     };
@@ -62,7 +62,7 @@ export async function startPayment(proposal: Proposal): Promise<Proposal> {
         orderId,
         approveUrl,
         amount: proposal.total,
-        mode: "mock",
+        mode: adapter.mode,
       },
     });
 

@@ -560,6 +560,7 @@ describe("paypal return and cancel flows", () => {
     let captureCalls = 0;
 
     const countingAdapter: PayPalAdapter = {
+      mode: "mock",
       async createOrder(p: Proposal) {
         return adapter.createOrder(p);
       },
@@ -750,6 +751,7 @@ describe("paypal return and cancel flows", () => {
     saveMandate(db, createTestMandate());
 
     const failingAuthAdapter: PayPalAdapter = {
+      mode: "mock",
       async createOrder(p: Proposal) {
         return adapter.createOrder(p);
       },
@@ -797,6 +799,7 @@ describe("paypal return and cancel flows", () => {
 
     let voidAttempted = false;
     const failingCaptureAdapter: PayPalAdapter = {
+      mode: "mock",
       async createOrder(p: Proposal) {
         return adapter.createOrder(p);
       },

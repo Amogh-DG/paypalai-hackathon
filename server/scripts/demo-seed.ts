@@ -42,6 +42,10 @@ const resetFlag = process.argv.some(
   (arg) => arg === "--reset" || arg.startsWith("--reset"),
 );
 
+const liveFlag = process.argv.some(
+  (arg) => arg === "--live" || arg.startsWith("--live"),
+);
+
 if (rowCount > 0) {
   if (!resetFlag) {
     process.stdout.write(
@@ -50,7 +54,9 @@ if (rowCount > 0) {
     db.close();
     process.exit(0);
   }
-  db.exec("DELETE FROM proposals; DELETE FROM audit_entries;");
+  db.exec(
+    "DELETE FROM proposals; DELETE FROM audit_entries; DELETE FROM mock_orders; DELETE FROM mock_authorizations;",
+  );
   process.stdout.write(
     "Flag --reset provided: cleared existing proposals and audit entries.\n",
   );
@@ -65,13 +71,17 @@ async function run(): Promise<void> {
   const { port } = server.address() as AddressInfo;
   const baseUrl = `http://127.0.0.1:${port}`;
 
-  const paypalAdapter = new MockPayPalAdapter({ publicBaseUrl: baseUrl });
+  const publicBaseUrl = liveFlag
+    ? process.env.PUBLIC_BASE_URL || "http://localhost:5173"
+    : baseUrl;
+
+  const paypalAdapter = new MockPayPalAdapter({ publicBaseUrl });
 
   const app = createApp(db, {
     signingSecret,
     paypalAdapter,
     paypalMode: "mock",
-    publicBaseUrl: baseUrl,
+    publicBaseUrl,
   });
 
   server.on("request", app);
@@ -144,16 +154,19 @@ async function run(): Promise<void> {
       process.exit(1);
     }
 
-    await fetch(proposal1.payment.approveUrl, { redirect: "follow" });
+    let p1Final = proposal1;
+    if (!liveFlag) {
+      await fetch(proposal1.payment.approveUrl, { redirect: "follow" });
 
-    const p1CheckRes = await fetch(`${baseUrl}/api/proposals/${proposal1.id}`);
-    const p1Final = (await p1CheckRes.json()) as Proposal;
+      const p1CheckRes = await fetch(`${baseUrl}/api/proposals/${proposal1.id}`);
+      p1Final = (await p1CheckRes.json()) as Proposal;
 
-    if (p1Final.status !== "captured") {
-      process.stderr.write(
-        `Scenario 1 expected final status captured, got ${p1Final.status}\n`,
-      );
-      process.exit(1);
+      if (p1Final.status !== "captured") {
+        process.stderr.write(
+          `Scenario 1 expected final status captured, got ${p1Final.status}\n`,
+        );
+        process.exit(1);
+      }
     }
 
     const proposal2 = await submitProposal({
@@ -182,42 +195,45 @@ async function run(): Promise<void> {
       process.exit(1);
     }
 
-    const decisionRes = await fetch(
-      `${baseUrl}/api/proposals/${proposal2.id}/decision`,
-      {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ action: "approve" }),
-      },
-    );
-
-    if (decisionRes.status !== 200) {
-      const errText = await decisionRes.text();
-      process.stderr.write(
-        `Scenario 2 decision approval failed: ${decisionRes.status} ${errText}\n`,
+    let p2Final = proposal2;
+    if (!liveFlag) {
+      const decisionRes = await fetch(
+        `${baseUrl}/api/proposals/${proposal2.id}/decision`,
+        {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ action: "approve" }),
+        },
       );
-      process.exit(1);
-    }
 
-    const p2Approved = (await decisionRes.json()) as Proposal;
+      if (decisionRes.status !== 200) {
+        const errText = await decisionRes.text();
+        process.stderr.write(
+          `Scenario 2 decision approval failed: ${decisionRes.status} ${errText}\n`,
+        );
+        process.exit(1);
+      }
 
-    if (!p2Approved.payment?.approveUrl) {
-      process.stderr.write(
-        "Scenario 2 expected approveUrl after approval decision\n",
-      );
-      process.exit(1);
-    }
+      const p2Approved = (await decisionRes.json()) as Proposal;
 
-    await fetch(p2Approved.payment.approveUrl, { redirect: "follow" });
+      if (!p2Approved.payment?.approveUrl) {
+        process.stderr.write(
+          "Scenario 2 expected approveUrl after approval decision\n",
+        );
+        process.exit(1);
+      }
 
-    const p2CheckRes = await fetch(`${baseUrl}/api/proposals/${proposal2.id}`);
-    const p2Final = (await p2CheckRes.json()) as Proposal;
+      await fetch(p2Approved.payment.approveUrl, { redirect: "follow" });
 
-    if (p2Final.status !== "captured") {
-      process.stderr.write(
-        `Scenario 2 expected final status captured, got ${p2Final.status}\n`,
-      );
-      process.exit(1);
+      const p2CheckRes = await fetch(`${baseUrl}/api/proposals/${proposal2.id}`);
+      p2Final = (await p2CheckRes.json()) as Proposal;
+
+      if (p2Final.status !== "captured") {
+        process.stderr.write(
+          `Scenario 2 expected final status captured, got ${p2Final.status}\n`,
+        );
+        process.exit(1);
+      }
     }
 
     const proposal3 = await submitProposal({
@@ -285,26 +301,76 @@ async function run(): Promise<void> {
       process.exit(1);
     }
 
-    console.table([
-      {
-        Scenario: "Scenario 1 (allowed)",
-        "Proposal ID": p1Final.id,
-        "Final Status": p1Final.status,
-        Decision: proposal1.policy.decision,
-      },
-      {
-        Scenario: "Scenario 2 (ask)",
-        "Proposal ID": p2Final.id,
-        "Final Status": p2Final.status,
-        Decision: proposal2.policy.decision,
-      },
-      {
-        Scenario: "Scenario 3 (attack)",
-        "Proposal ID": proposal3.id,
-        "Final Status": proposal3.status,
-        Decision: proposal3.policy.decision,
-      },
-    ]);
+    if (liveFlag) {
+      const psCommand = `Invoke-RestMethod -Method Post -Uri "http://localhost:3001/api/proposals/${proposal2.id}/decision" -ContentType "application/json" -Body '{"action":"approve"}'`;
+
+      process.stdout.write("\n=== Demo Seed (Live Mode) ===\n\n");
+      process.stdout.write("Scenario 1 (allowed):\n");
+      process.stdout.write(`  Proposal ID: ${proposal1.id}\n`);
+      process.stdout.write(`  Status: ${proposal1.status}\n`);
+      process.stdout.write(
+        `  Approve URL: ${proposal1.payment?.approveUrl}\n\n`,
+      );
+
+      process.stdout.write("Scenario 2 (needs approval):\n");
+      process.stdout.write(`  Proposal ID: ${proposal2.id}\n`);
+      process.stdout.write(`  Status: ${proposal2.status}\n`);
+      process.stdout.write(`  PowerShell Command: ${psCommand}\n\n`);
+
+      process.stdout.write("Scenario 3 (attack):\n");
+      process.stdout.write(`  Proposal ID: ${proposal3.id}\n`);
+      process.stdout.write(`  Status: ${proposal3.status}\n\n`);
+
+      process.stdout.write("Waiting on user action:\n");
+      process.stdout.write(
+        `- Scenario 1 (${proposal1.id}) is waiting at awaiting_buyer: opening the approve URL above in your browser captures scenario 1.\n`,
+      );
+      process.stdout.write(
+        `- Scenario 2 (${proposal2.id}) is waiting at needs_approval: the PowerShell command above moves scenario 2 to awaiting_buyer, and its approveUrl is then available from GET /api/proposals/${proposal2.id}.\n\n`,
+      );
+
+      console.table([
+        {
+          Scenario: "Scenario 1 (allowed)",
+          "Proposal ID": proposal1.id,
+          Status: proposal1.status,
+          Decision: proposal1.policy.decision,
+        },
+        {
+          Scenario: "Scenario 2 (ask)",
+          "Proposal ID": proposal2.id,
+          Status: proposal2.status,
+          Decision: proposal2.policy.decision,
+        },
+        {
+          Scenario: "Scenario 3 (attack)",
+          "Proposal ID": proposal3.id,
+          Status: proposal3.status,
+          Decision: proposal3.policy.decision,
+        },
+      ]);
+    } else {
+      console.table([
+        {
+          Scenario: "Scenario 1 (allowed)",
+          "Proposal ID": p1Final.id,
+          "Final Status": p1Final.status,
+          Decision: proposal1.policy.decision,
+        },
+        {
+          Scenario: "Scenario 2 (ask)",
+          "Proposal ID": p2Final.id,
+          "Final Status": p2Final.status,
+          Decision: proposal2.policy.decision,
+        },
+        {
+          Scenario: "Scenario 3 (attack)",
+          "Proposal ID": proposal3.id,
+          "Final Status": proposal3.status,
+          Decision: proposal3.policy.decision,
+        },
+      ]);
+    }
   } finally {
     await new Promise<void>((resolve, reject) => {
       server.close((err) => (err ? reject(err) : resolve()));

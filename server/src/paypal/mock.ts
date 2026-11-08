@@ -15,6 +15,7 @@ export type MockPayPalOptions = {
 };
 
 export class MockPayPalAdapter implements PayPalAdapter {
+  readonly mode: "mock" = "mock";
   private db?: DatabaseType;
   private publicBaseUrl: string;
   private authorizeAmountOverride?: number;

@@ -7,7 +7,8 @@
     "dev": "tsx watch src/index.ts",
     "start": "tsx src/index.ts",
     "test": "vitest run",
-    "demo:seed": "tsx scripts/demo-seed.ts"
+    "demo:seed": "tsx scripts/demo-seed.ts",
+    "paypal:smoke": "tsx scripts/paypal-smoke.ts"
   },
   "dependencies": {
     "@leash/shared": "*",

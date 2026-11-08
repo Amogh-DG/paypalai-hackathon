@@ -141,6 +141,7 @@ describe("paypal adapter and payment flow", () => {
 
     let createOrderCalled = false;
     const trackingAdapter: PayPalAdapter = {
+      mode: "mock",
       async createOrder(p: Proposal) {
         createOrderCalled = true;
         return adapter.createOrder(p);
@@ -197,6 +198,7 @@ describe("paypal adapter and payment flow", () => {
 
     let createOrderCalls = 0;
     const trackingAdapter: PayPalAdapter = {
+      mode: "mock",
       async createOrder(p: Proposal) {
         createOrderCalls++;
         return adapter.createOrder(p);
@@ -270,6 +272,7 @@ describe("paypal adapter and payment flow", () => {
 
     let createOrderCalls = 0;
     const trackingAdapter: PayPalAdapter = {
+      mode: "mock",
       async createOrder(p: Proposal) {
         createOrderCalls++;
         return adapter.createOrder(p);
@@ -338,6 +341,7 @@ describe("paypal adapter and payment flow", () => {
     saveMandate(db, createTestMandate());
 
     const failingAdapter: PayPalAdapter = {
+      mode: "mock",
       async createOrder() {
         throw new Error("Simulated PayPal outage");
       },

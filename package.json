@@ -18,7 +18,8 @@
     "boundary-check": "node boundary-check.mjs",
     "build": "npm run build --workspace=@leash/web",
     "start": "npm run start --workspace=@leash/server",
-    "demo:seed": "npm run demo:seed --workspace=@leash/server --"
+    "demo:seed": "npm run demo:seed --workspace=@leash/server --",
+    "paypal:smoke": "npm run paypal:smoke --workspace=@leash/server --"
   },
   "devDependencies": {
     "@eslint/js": "^9.16.0",
