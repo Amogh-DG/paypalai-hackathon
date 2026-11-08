@@ -467,4 +467,61 @@ export class SandboxPayPalAdapter implements PayPalAdapter {
       },
     );
   }
+
+  async verifyWebhookSignature(params: {
+    authAlgo: string;
+    certUrl: string;
+    transmissionId: string;
+    transmissionSig: string;
+    transmissionTime: string;
+    webhookId: string;
+    webhookEvent?: Record<string, unknown>;
+    rawEvent?: string;
+  }): Promise<boolean> {
+    const token = await this.getAccessToken();
+    const headers: Record<string, string> = {
+      Authorization: `Bearer ${token}`,
+      "Content-Type": "application/json",
+      ...this.extraHeaders,
+    };
+
+    let body: string;
+    if (params.rawEvent) {
+      const meta = {
+        auth_algo: params.authAlgo,
+        cert_url: params.certUrl,
+        transmission_id: params.transmissionId,
+        transmission_sig: params.transmissionSig,
+        transmission_time: params.transmissionTime,
+        webhook_id: params.webhookId,
+      };
+      const metaStr = JSON.stringify(meta);
+      body = metaStr.slice(0, -1) + `,"webhook_event":${params.rawEvent}}`;
+    } else {
+      body = JSON.stringify({
+        auth_algo: params.authAlgo,
+        cert_url: params.certUrl,
+        transmission_id: params.transmissionId,
+        transmission_sig: params.transmissionSig,
+        transmission_time: params.transmissionTime,
+        webhook_id: params.webhookId,
+        webhook_event: params.webhookEvent,
+      });
+    }
+
+    try {
+      const res = await this.doRequest(
+        `${this.apiBaseUrl}/v1/notifications/verify-webhook-signature`,
+        {
+          method: "POST",
+          headers,
+          body,
+        },
+      );
+      const data = (await res.json()) as { verification_status?: string };
+      return data.verification_status === "SUCCESS";
+    } catch {
+      return false;
+    }
+  }
 }

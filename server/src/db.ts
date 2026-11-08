@@ -63,6 +63,11 @@ export function createDb(dbPath: string): DatabaseType {
       currency TEXT NOT NULL,
       status TEXT NOT NULL
     );
+
+    CREATE TABLE IF NOT EXISTS processed_webhook_events (
+      event_id TEXT PRIMARY KEY,
+      received_at TEXT NOT NULL
+    );
   `);
 
   return db;

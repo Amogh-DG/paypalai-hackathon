@@ -1,6 +1,8 @@
 import express, { type Express } from "express";
 import path from "node:path";
+import { fileURLToPath } from "node:url";
 import type { Database as DatabaseType } from "better-sqlite3";
+import { ERROR_CODES } from "@leash/shared";
 import { createMandateRouter } from "./routes/mandate.js";
 import { chatRouter } from "./routes/chat.js";
 import { createProposalsRouter } from "./routes/proposals.js";
@@ -8,7 +10,7 @@ import { createDecisionRouter } from "./routes/decision.js";
 import { createPaypalReturnRouter } from "./routes/paypal-return.js";
 import { createPaypalCancelRouter } from "./routes/paypal-cancel.js";
 import { createMockApproveRouter } from "./routes/mock-approve.js";
-import { webhookRouter } from "./routes/webhook.js";
+import { createWebhookRouter } from "./routes/webhook.js";
 import { createAuditRouter } from "./routes/audit.js";
 import { initProposalService } from "./proposals/service.js";
 import { initPayment } from "./proposals/payment.js";
@@ -18,7 +20,7 @@ import {
   MockPayPalAdapter,
   SandboxPayPalAdapter,
 } from "./paypal/index.js";
-import { errorHandler } from "./http/errors.js";
+import { errorHandler, AppError } from "./http/errors.js";
 import { createDb } from "./db.js";
 
 export function createApp(
@@ -30,9 +32,12 @@ export function createApp(
     publicBaseUrl?: string;
     clock?: () => Date;
     beforeErrorRoutes?: (app: Express) => void;
+    isProduction?: boolean;
+    webDist?: string;
   },
 ): Express {
   const application = express();
+  application.set("trust proxy", 1);
 
   const paypalMode =
     options?.paypalMode ?? (process.env.PAYPAL_MODE || "mock");
@@ -58,6 +63,11 @@ export function createApp(
   initPayment(db, paypalAdapter);
   initProposalService(db, options?.signingSecret, options?.clock);
 
+  application.use(
+    "/api/paypal/webhook",
+    express.raw({ type: "*/*" }),
+  );
+
   application.use(express.json());
 
   application.get("/health", (_req, res) => {
@@ -68,10 +78,8 @@ export function createApp(
     res.json({ status: "ok" });
   });
 
-  application.use(
-    "/shady",
-    express.static(path.resolve(process.cwd(), "server/public/shady")),
-  );
+  const shadyDir = fileURLToPath(new URL("../public/shady", import.meta.url));
+  application.use("/shady", express.static(shadyDir));
 
   application.use(createMandateRouter(db, options?.signingSecret));
   application.use(chatRouter);
@@ -86,11 +94,16 @@ export function createApp(
   );
   application.use(createPaypalCancelRouter(db));
   application.use(createMockApproveRouter(db, paypalMode));
-  application.use(webhookRouter);
+  application.use(createWebhookRouter(db, paypalAdapter, paypalMode));
   application.use(createAuditRouter(db));
 
-  if (process.env.NODE_ENV === "production") {
-    const webDist = path.resolve(process.cwd(), "web/dist");
+  const isProduction =
+    options?.isProduction ?? process.env.NODE_ENV === "production";
+  const webDist =
+    options?.webDist ??
+    fileURLToPath(new URL("../../web/dist", import.meta.url));
+
+  if (isProduction) {
     application.use(express.static(webDist));
     application.get("*", (req, res, next) => {
       if (req.path.startsWith("/api") || req.path.startsWith("/shady")) {
@@ -101,6 +114,10 @@ export function createApp(
   }
 
   options?.beforeErrorRoutes?.(application);
+
+  application.use("/api", (_req, _res, next) => {
+    next(new AppError(ERROR_CODES.NOT_FOUND, "Route not found"));
+  });
 
   application.use(errorHandler);
 

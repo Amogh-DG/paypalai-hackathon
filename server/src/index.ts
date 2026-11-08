@@ -25,12 +25,28 @@ if (!signingSecret) {
   process.exit(1);
 }
 
+if (process.env.NODE_ENV === "production") {
+  const publicBaseUrl = process.env.PUBLIC_BASE_URL;
+  if (!publicBaseUrl) {
+    process.stderr.write(
+      "PUBLIC_BASE_URL environment variable is required in production\n",
+    );
+    process.exit(1);
+  }
+  if (!publicBaseUrl.startsWith("https://")) {
+    process.stderr.write(
+      "PUBLIC_BASE_URL must be an https URL in production\n",
+    );
+    process.exit(1);
+  }
+}
+
 const dbPath = process.env.DATABASE_PATH || "leash.db";
 const db = createDb(dbPath);
 const app = createApp(db, { signingSecret });
 
 const port = Number(process.env.PORT) || 3001;
 
-app.listen(port, () => {
+app.listen(port, "0.0.0.0", () => {
   process.stdout.write(`Server listening on port ${port}\n`);
 });
