@@ -5,8 +5,8 @@ import { createMandateRouter } from "./routes/mandate.js";
 import { chatRouter } from "./routes/chat.js";
 import { createProposalsRouter } from "./routes/proposals.js";
 import { createDecisionRouter } from "./routes/decision.js";
-import { paypalReturnRouter } from "./routes/paypal-return.js";
-import { paypalCancelRouter } from "./routes/paypal-cancel.js";
+import { createPaypalReturnRouter } from "./routes/paypal-return.js";
+import { createPaypalCancelRouter } from "./routes/paypal-cancel.js";
 import { createMockApproveRouter } from "./routes/mock-approve.js";
 import { webhookRouter } from "./routes/webhook.js";
 import { createAuditRouter } from "./routes/audit.js";
@@ -23,6 +23,7 @@ export function createApp(
     paypalAdapter?: PayPalAdapter;
     paypalMode?: "mock" | "sandbox" | string;
     publicBaseUrl?: string;
+    clock?: () => Date;
     beforeErrorRoutes?: (app: Express) => void;
   },
 ): Express {
@@ -37,7 +38,7 @@ export function createApp(
     });
 
   initPayment(db, paypalAdapter);
-  initProposalService(db, options?.signingSecret);
+  initProposalService(db, options?.signingSecret, options?.clock);
 
   application.use(express.json());
 
@@ -58,8 +59,14 @@ export function createApp(
   application.use(chatRouter);
   application.use(createProposalsRouter(db));
   application.use(createDecisionRouter(db));
-  application.use(paypalReturnRouter);
-  application.use(paypalCancelRouter);
+  application.use(
+    createPaypalReturnRouter(db, paypalAdapter, {
+      signingSecret: options?.signingSecret,
+      clock: options?.clock,
+      paypalMode,
+    }),
+  );
+  application.use(createPaypalCancelRouter(db));
   application.use(createMockApproveRouter(db, paypalMode));
   application.use(webhookRouter);
   application.use(createAuditRouter(db));

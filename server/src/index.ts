@@ -1,6 +1,21 @@
-import "dotenv/config";
+import { fileURLToPath } from "node:url";
 import { createDb } from "./db.js";
 import { createApp } from "./app.js";
+
+const envPath =
+  process.env.ENV_FILE ||
+  fileURLToPath(new URL("../../.env", import.meta.url));
+
+if (typeof process.loadEnvFile === "function") {
+  try {
+    process.loadEnvFile(envPath);
+  } catch (err: unknown) {
+    const code = (err as { code?: string })?.code;
+    if (code !== "ENOENT") {
+      throw err;
+    }
+  }
+}
 
 const signingSecret = process.env.MANDATE_SIGNING_SECRET;
 if (!signingSecret) {

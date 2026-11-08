@@ -21,13 +21,16 @@ import { startPayment } from "./payment.js";
 
 let currentDb: DatabaseType | null = null;
 let currentSigningSecret: string | null = null;
+let currentClock: (() => Date) | null = null;
 
 export function initProposalService(
   db: DatabaseType,
   signingSecret?: string,
+  clock?: () => Date,
 ): void {
   currentDb = db;
   currentSigningSecret = signingSecret ?? null;
+  currentClock = clock ?? null;
 }
 
 const nonBlankString = (fieldName: string) =>
@@ -118,7 +121,7 @@ export async function submitProposal(input: ProposalInput): Promise<Proposal> {
     mandate,
     {
       spent,
-      now: new Date(),
+      now: currentClock ? currentClock() : new Date(),
       signingSecret: currentSigningSecret,
     },
   );

@@ -5,6 +5,7 @@ const rootDir = process.cwd();
 const agentDir = path.join(rootDir, "server", "src", "agent");
 const paypalDir = path.join(rootDir, "server", "src", "paypal");
 const policyDir = path.join(rootDir, "server", "src", "policy");
+const proposalsDir = path.join(rootDir, "server", "src", "proposals");
 
 function getSourceFiles(dir) {
   if (!fs.existsSync(dir)) {
@@ -95,6 +96,7 @@ export function runBoundaryCheck() {
   const moneyFiles = [
     ...getSourceFiles(paypalDir),
     ...getSourceFiles(policyDir),
+    ...getSourceFiles(proposalsDir),
   ];
   for (const file of moneyFiles) {
     const content = fs.readFileSync(file, "utf-8");
