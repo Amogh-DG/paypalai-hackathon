@@ -47,6 +47,22 @@ export function createDb(dbPath: string): DatabaseType {
       decision TEXT,
       details TEXT NOT NULL
     );
+
+    CREATE TABLE IF NOT EXISTS mock_orders (
+      id TEXT PRIMARY KEY,
+      proposal_id TEXT NOT NULL,
+      amount_cents INTEGER NOT NULL,
+      currency TEXT NOT NULL,
+      status TEXT NOT NULL
+    );
+
+    CREATE TABLE IF NOT EXISTS mock_authorizations (
+      id TEXT PRIMARY KEY,
+      order_id TEXT NOT NULL,
+      amount_cents INTEGER NOT NULL,
+      currency TEXT NOT NULL,
+      status TEXT NOT NULL
+    );
   `);
 
   return db;

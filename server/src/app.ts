@@ -12,7 +12,11 @@ import { webhookRouter } from "./routes/webhook.js";
 import { createAuditRouter } from "./routes/audit.js";
 import { initProposalService } from "./proposals/service.js";
 import { initPayment } from "./proposals/payment.js";
-import { createPayPalAdapter, type PayPalAdapter } from "./paypal/index.js";
+import {
+  createPayPalAdapter,
+  type PayPalAdapter,
+  MockPayPalAdapter,
+} from "./paypal/index.js";
 import { errorHandler } from "./http/errors.js";
 import { createDb } from "./db.js";
 
@@ -34,8 +38,13 @@ export function createApp(
   const paypalAdapter =
     options?.paypalAdapter ??
     createPayPalAdapter(paypalMode, {
+      db,
       publicBaseUrl: options?.publicBaseUrl ?? process.env.PUBLIC_BASE_URL,
     });
+
+  if (paypalAdapter instanceof MockPayPalAdapter && !paypalAdapter.hasDb()) {
+    paypalAdapter.setDb(db);
+  }
 
   initPayment(db, paypalAdapter);
   initProposalService(db, options?.signingSecret, options?.clock);
