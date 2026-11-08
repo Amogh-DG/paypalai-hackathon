@@ -340,7 +340,9 @@ export class SandboxPayPalAdapter implements PayPalAdapter {
       links?: Array<{ href: string; rel: string; method: string }>;
     };
 
-    const approveLink = data.links?.find((l) => l.rel === "approve");
+    const approveLink = data.links?.find(
+      (l) => l.rel === "approve" || l.rel === "payer-action",
+    );
     if (!approveLink || !approveLink.href) {
       throw new Error(
         `PayPal create order response missing approve link for order ${data.id}`,

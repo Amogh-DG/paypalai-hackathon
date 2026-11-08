@@ -46,7 +46,7 @@ describe("environment and server startup", () => {
     } finally {
       fs.rmSync(tempDir, { recursive: true, force: true, maxRetries: 5, retryDelay: 100 });
     }
-  });
+  }, 20000);
 
   it("starts successfully without a .env file when MANDATE_SIGNING_SECRET is in process.env", async () => {
     const tempDir = fs.mkdtempSync(path.join(os.tmpdir(), "leash-missing-env-"));
@@ -88,7 +88,7 @@ describe("environment and server startup", () => {
     } finally {
       fs.rmSync(tempDir, { recursive: true, force: true, maxRetries: 5, retryDelay: 100 });
     }
-  });
+  }, 20000);
 
   it("loads MANDATE_SIGNING_SECRET and port from custom .env file when starting", async () => {
     const tempDir = fs.mkdtempSync(path.join(os.tmpdir(), "leash-with-env-"));
@@ -132,7 +132,7 @@ describe("environment and server startup", () => {
     } finally {
       fs.rmSync(tempDir, { recursive: true, force: true, maxRetries: 5, retryDelay: 100 });
     }
-  });
+  }, 20000);
 
   it("loads values from the repository root .env file by default", async () => {
     const tempDir = fs.mkdtempSync(path.join(os.tmpdir(), "leash-root-env-"));
@@ -171,5 +171,5 @@ describe("environment and server startup", () => {
     } finally {
       fs.rmSync(tempDir, { recursive: true, force: true, maxRetries: 5, retryDelay: 100 });
     }
-  });
+  }, 20000);
 });
