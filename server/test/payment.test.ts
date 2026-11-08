@@ -183,7 +183,13 @@ describe("paypal adapter and payment flow", () => {
     expect(createOrderCalled).toBe(false);
 
     const audits = listAudit(db, 20);
-    expect(audits.some((a) => a.event === "order_created")).toBe(false);
+    expect(
+      audits.some(
+        (a) =>
+          ["order_created", "authorized", "captured"].includes(a.event) &&
+          a.proposalId === proposal.id,
+      ),
+    ).toBe(false);
   });
 
   it("a needs_approval proposal creates no order until it is approved, and after approval ends awaiting_buyer", async () => {

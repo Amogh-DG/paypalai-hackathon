@@ -221,6 +221,13 @@ describe("paypal return and cancel flows", () => {
     saveMandate(db, createTestMandate());
     adapter.setAuthorizeAmountOverride(99.99);
 
+    let captureCalled = false;
+    const origCapture = adapter.captureAuthorization.bind(adapter);
+    adapter.captureAuthorization = async (id: string) => {
+      captureCalled = true;
+      return origCapture(id);
+    };
+
     const proposal = await submitProposal(getValidProposalInput());
     const token = proposal.payment?.orderId!;
 
@@ -233,6 +240,7 @@ describe("paypal return and cancel flows", () => {
     const finalProposal = getProposal(db, proposal.id);
     expect(finalProposal?.status).toBe("voided");
     expect(finalProposal?.payment?.captureId).toBeUndefined();
+    expect(captureCalled).toBe(false);
 
     const audits = listAudit(db, 20);
     const recheckAudit = audits.find(
@@ -540,6 +548,9 @@ describe("paypal return and cancel flows", () => {
       }),
     );
     expect(pC.status).toBe("blocked");
+    expect(
+      pC.policy.results.find((r) => r.rule === "within_budget")?.passed,
+    ).toBe(false);
   });
 
   it("idempotency: sequential and concurrent return calls result in exactly one authorization and capture", async () => {
@@ -616,15 +627,47 @@ describe("paypal return and cancel flows", () => {
     const proposal = await submitProposal(getValidProposalInput());
     const correctToken = proposal.payment?.orderId!;
 
+    let authorizeCalls = 0;
+    let captureCalls = 0;
+    let voidCalls = 0;
+    adapter.authorizeOrder = async () => {
+      authorizeCalls++;
+      return { authorizationId: "auth_test", amount: 20, currency: "USD" };
+    };
+    adapter.captureAuthorization = async () => {
+      captureCalls++;
+      return { captureId: "cap_test" };
+    };
+    adapter.voidAuthorization = async () => {
+      voidCalls++;
+    };
+
+    const auditsBefore = listAudit(db, 50).filter(
+      (a) => a.proposalId === proposal.id,
+    );
+
     const resWrong = await fetch(
       `${baseUrl}/api/paypal/return?proposalId=${proposal.id}&token=wrong_tok`,
     );
     expect(resWrong.status).toBe(400);
 
+    const currentProposal = getProposal(db, proposal.id);
+    expect(currentProposal?.status).toBe("awaiting_buyer");
+    expect(authorizeCalls).toBe(0);
+    expect(captureCalls).toBe(0);
+    expect(voidCalls).toBe(0);
+
+    const auditsAfter = listAudit(db, 50).filter(
+      (a) => a.proposalId === proposal.id,
+    );
+    expect(auditsAfter.length).toBe(auditsBefore.length);
+
     const resUnknown = await fetch(
       `${baseUrl}/api/paypal/return?proposalId=prop_nonexistent&token=${correctToken}`,
     );
     expect(resUnknown.status).toBe(404);
+    const unknownBody = (await resUnknown.json()) as any;
+    expect(unknownBody.error.code).toBe("not_found");
 
     const attackProposal = await submitProposal(
       getValidProposalInput({
@@ -647,10 +690,20 @@ describe("paypal return and cancel flows", () => {
       `${baseUrl}/api/paypal/return?proposalId=${attackProposal.id}&token=fake_tok`,
     );
     expect(resBlocked.status).toBe(409);
+    const blockedBody = (await resBlocked.json()) as any;
+    expect(blockedBody.error.code).toBe("invalid_state");
   });
 
   it("cancel endpoint voids awaiting_buyer, ignores other states, and is idempotent", async () => {
     saveMandate(db, createTestMandate());
+
+    let authorizeCalled = false;
+    const origAuthorize = adapter.authorizeOrder.bind(adapter);
+    adapter.authorizeOrder = async (orderId: string) => {
+      authorizeCalled = true;
+      return origAuthorize(orderId);
+    };
+
     const proposal = await submitProposal(getValidProposalInput());
     expect(proposal.status).toBe("awaiting_buyer");
 
@@ -660,6 +713,7 @@ describe("paypal return and cancel flows", () => {
     );
     expect(cancelRes.status).toBe(302);
     expect(cancelRes.headers.get("location")).toBe(`/?proposal=${proposal.id}`);
+    expect(authorizeCalled).toBe(false);
 
     expect(getProposal(db, proposal.id)?.status).toBe("voided");
 
@@ -811,5 +865,61 @@ describe("paypal return and cancel flows", () => {
     });
     expect(getProposal(db, pCancel.id)?.status).toBe("voided");
     expect(getSpent(db)).toBe(20);
+
+    const pFail = await submitProposal(getValidProposalInput());
+    expect(getSpent(db)).toBe(40);
+    db.prepare("UPDATE proposals SET status = 'failed' WHERE id = ?").run(
+      pFail.id,
+    );
+    expect(getProposal(db, pFail.id)?.status).toBe("failed");
+    expect(getSpent(db)).toBe(20);
+  });
+
+  it("the return redirect goes to /?proposal={id} in every case, including already-processed proposals", async () => {
+    saveMandate(db, createTestMandate());
+    const proposal = await submitProposal(getValidProposalInput());
+    const token = proposal.payment?.orderId!;
+
+    const firstReturnRes = await fetch(
+      `${baseUrl}/api/paypal/return?proposalId=${proposal.id}&token=${token}`,
+      { redirect: "manual" },
+    );
+    expect(firstReturnRes.status).toBe(302);
+    expect(firstReturnRes.headers.get("location")).toBe(
+      `/?proposal=${proposal.id}`,
+    );
+    expect(getProposal(db, proposal.id)?.status).toBe("captured");
+
+    const secondReturnRes = await fetch(
+      `${baseUrl}/api/paypal/return?proposalId=${proposal.id}&token=${token}`,
+      { redirect: "manual" },
+    );
+    expect(secondReturnRes.status).toBe(302);
+    expect(secondReturnRes.headers.get("location")).toBe(
+      `/?proposal=${proposal.id}`,
+    );
+
+    const pVoid = await submitProposal(getValidProposalInput());
+    const tokenVoid = pVoid.payment?.orderId!;
+    adapter.setAuthorizeAmountOverride(99.99);
+
+    const voidReturnRes = await fetch(
+      `${baseUrl}/api/paypal/return?proposalId=${pVoid.id}&token=${tokenVoid}`,
+      { redirect: "manual" },
+    );
+    expect(voidReturnRes.status).toBe(302);
+    expect(voidReturnRes.headers.get("location")).toBe(
+      `/?proposal=${pVoid.id}`,
+    );
+    expect(getProposal(db, pVoid.id)?.status).toBe("voided");
+
+    const voidReturnAgain = await fetch(
+      `${baseUrl}/api/paypal/return?proposalId=${pVoid.id}&token=${tokenVoid}`,
+      { redirect: "manual" },
+    );
+    expect(voidReturnAgain.status).toBe(302);
+    expect(voidReturnAgain.headers.get("location")).toBe(
+      `/?proposal=${pVoid.id}`,
+    );
   });
 });
