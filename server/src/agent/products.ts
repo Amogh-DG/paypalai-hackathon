@@ -10,9 +10,13 @@ export async function searchProducts(
   const words = normalize(query).split(" ").filter(Boolean);
   return catalog
     .filter((product) => {
-      const fields = [product.title, product.merchant, product.category].map(normalize);
-      return (maxPrice === undefined || product.price <= maxPrice)
-        && words.every((word) => fields.some((field) => field.includes(word)));
+      const fields = [product.title, product.merchant, product.category].map(
+        normalize,
+      );
+      return (
+        (maxPrice === undefined || product.price <= maxPrice) &&
+        words.every((word) => fields.some((field) => field.includes(word)))
+      );
     })
     .sort((left, right) => left.price - right.price)
     .slice(0, 10)
