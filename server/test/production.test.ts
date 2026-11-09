@@ -14,33 +14,37 @@ const require = createRequire(import.meta.url);
 const tsxLoader = pathToFileURL(require.resolve("tsx")).href;
 const serverDir = fileURLToPath(new URL("..", import.meta.url));
 const indexFile = path.resolve(serverDir, "src", "index.ts");
-const shadyTestFile = path.resolve(
-  serverDir,
-  "public",
-  "shady",
-  "test-shady.html",
-);
+const realShadyDir = path.resolve(serverDir, "public", "shady");
 
 describe("production serving and startup", () => {
   let server: Server;
   let baseUrl: string;
   let tempWebDir: string;
+  let tempShadyDir: string;
+  let initialRealShadyFiles: string[];
 
   beforeAll(async () => {
+    initialRealShadyFiles = fs.readdirSync(realShadyDir).sort();
+
     tempWebDir = fs.mkdtempSync(path.join(os.tmpdir(), "leash-prod-web-"));
     fs.writeFileSync(
       path.join(tempWebDir, "index.html"),
       "<!DOCTYPE html><html><head><title>Leash App</title></head><body><div id=\"root\"></div></body></html>",
     );
 
-    fs.mkdirSync(path.dirname(shadyTestFile), { recursive: true });
-    fs.writeFileSync(shadyTestFile, "<html><body>Shady Deal</body></html>");
+    tempShadyDir = fs.mkdtempSync(path.join(os.tmpdir(), "leash-prod-shady-"));
+    fs.writeFileSync(
+      path.join(tempShadyDir, "test-shady.html"),
+      "<html><body>Shady Deal</body></html>",
+    );
+    fs.writeFileSync(path.join(tempShadyDir, ".gitkeep"), "");
 
     const db = createDb(":memory:");
     const app = createApp(db, {
       signingSecret: "test-secret-prod",
       isProduction: true,
       webDist: tempWebDir,
+      shadyDir: tempShadyDir,
     });
 
     await new Promise<void>((resolve) => {
@@ -61,9 +65,11 @@ describe("production serving and startup", () => {
     if (fs.existsSync(tempWebDir)) {
       fs.rmSync(tempWebDir, { recursive: true, force: true });
     }
-    if (fs.existsSync(shadyTestFile)) {
-      fs.unlinkSync(shadyTestFile);
+    if (fs.existsSync(tempShadyDir)) {
+      fs.rmSync(tempShadyDir, { recursive: true, force: true });
     }
+    const finalRealShadyFiles = fs.readdirSync(realShadyDir).sort();
+    expect(finalRealShadyFiles).toEqual(initialRealShadyFiles);
   });
 
   it("serves index.html at root path /", async () => {
@@ -93,11 +99,50 @@ describe("production serving and startup", () => {
     });
   });
 
-  it("serves static content from /shady", async () => {
+  it("serves static content from /shady from the temporary folder", async () => {
     const res = await fetch(`${baseUrl}/shady/test-shady.html`);
     expect(res.status).toBe(200);
     const text = await res.text();
     expect(text).toContain("Shady Deal");
+  });
+
+  it("returns 404 for a missing file under /shady", async () => {
+    const res = await fetch(`${baseUrl}/shady/missing-file.html`);
+    expect(res.status).toBe(404);
+  });
+
+  it("does not serve .gitkeep under /shady", async () => {
+    const res = await fetch(`${baseUrl}/shady/.gitkeep`);
+    expect(res.status).toBe(404);
+  });
+
+  it("leaves the real server/public/shady listing unchanged", () => {
+    const currentFiles = fs.readdirSync(realShadyDir).sort();
+    expect(currentFiles).toEqual(initialRealShadyFiles);
+  });
+
+  it("serves from the real folder by default when shadyDir is not specified", async () => {
+    const defaultApp = createApp(createDb(":memory:"));
+    let defaultServer!: Server;
+    let defaultUrl = "";
+    await new Promise<void>((resolve) => {
+      defaultServer = defaultApp.listen(0, "127.0.0.1", () => {
+        const addr = defaultServer.address() as AddressInfo;
+        defaultUrl = `http://127.0.0.1:${addr.port}`;
+        resolve();
+      });
+    });
+
+    try {
+      const missingRes = await fetch(`${defaultUrl}/shady/nonexistent.html`);
+      expect(missingRes.status).toBe(404);
+      const gitkeepRes = await fetch(`${defaultUrl}/shady/.gitkeep`);
+      expect(gitkeepRes.status).toBe(404);
+    } finally {
+      await new Promise<void>((resolve) => {
+        defaultServer.close(() => resolve());
+      });
+    }
   });
 
   it("responds to /health quickly without touching database", async () => {

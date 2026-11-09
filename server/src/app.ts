@@ -34,6 +34,7 @@ export function createApp(
     beforeErrorRoutes?: (app: Express) => void;
     isProduction?: boolean;
     webDist?: string;
+    shadyDir?: string;
   },
 ): Express {
   const application = express();
@@ -78,8 +79,10 @@ export function createApp(
     res.json({ status: "ok" });
   });
 
-  const shadyDir = fileURLToPath(new URL("../public/shady", import.meta.url));
-  application.use("/shady", express.static(shadyDir));
+  const shadyDir =
+    options?.shadyDir ??
+    fileURLToPath(new URL("../public/shady", import.meta.url));
+  application.use("/shady", express.static(shadyDir, { dotfiles: "ignore" }));
 
   application.use(createMandateRouter(db, options?.signingSecret));
   application.use(chatRouter);

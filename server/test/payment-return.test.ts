@@ -581,6 +581,7 @@ describe("paypal return and cancel flows", () => {
       signingSecret: secret,
       paypalAdapter: countingAdapter,
       paypalMode: "mock",
+      clock,
     });
 
     const localServer = app.listen(0);
@@ -770,6 +771,7 @@ describe("paypal return and cancel flows", () => {
       signingSecret: secret,
       paypalAdapter: failingAuthAdapter,
       paypalMode: "mock",
+      clock,
     });
 
     const server1 = app1.listen(0);
@@ -819,6 +821,7 @@ describe("paypal return and cancel flows", () => {
       signingSecret: secret,
       paypalAdapter: failingCaptureAdapter,
       paypalMode: "mock",
+      clock,
     });
 
     const server2 = app2.listen(0);
