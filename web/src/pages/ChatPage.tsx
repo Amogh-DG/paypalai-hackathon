@@ -1,10 +1,16 @@
-import React from "react";
+import { useEffect } from "react";
+import { Card } from "../components/Card";
+import { useProposalParam } from "../hooks/useProposalParam";
 
-export const ChatPage: React.FC = () => {
+export function ChatPage() {
+  const proposal = useProposalParam();
+  useEffect(() => {
+    console.log(proposal);
+  }, [proposal]);
   return (
-    <div style={{ padding: "1.5rem" }}>
+    <Card>
       <h2>Chat</h2>
-      <p>Shopping agent chat placeholder</p>
-    </div>
+      <p>Chat page — coming in B-07</p>
+    </Card>
   );
-};
+}
