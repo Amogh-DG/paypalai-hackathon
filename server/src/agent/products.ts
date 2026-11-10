@@ -1,12 +1,24 @@
 import type { Product } from "@leash/shared";
 import { normalize } from "@leash/shared/normalize";
 import { catalog } from "./catalog.js";
+import { searchChannel3 } from "./channel3.js";
 import { extractPageText, fetchPageHtml } from "./pageText.js";
 
 export async function searchProducts(
   query: string,
   maxPrice?: number,
 ): Promise<Product[]> {
+  try {
+    const products = await searchChannel3(query, maxPrice);
+    if (products.length > 0) return products;
+  } catch {
+    return searchCatalog(query, maxPrice);
+  }
+
+  return searchCatalog(query, maxPrice);
+}
+
+function searchCatalog(query: string, maxPrice?: number): Product[] {
   const words = normalize(query).split(" ").filter(Boolean);
   return catalog
     .filter((product) => {
