@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { FINAL_STATUSES, type Proposal } from "@leash/shared";
 import { getProposal, type ApiError } from "../api";
 
@@ -10,11 +10,25 @@ export function useProposalPolling(id: string) {
     failures: number;
   }>({ id, failures: 0 });
   const [attempt, setAttempt] = useState(0);
+  const generation = useRef(0);
+  const updated = useRef<Proposal>();
+  const acceptProposal = useCallback(
+    (proposal: Proposal) => {
+      if (proposal.id !== id) return;
+      generation.current += 1;
+      updated.current = proposal;
+      setState({ id, proposal, failures: 0 });
+      setAttempt((value) => value + 1);
+    },
+    [id],
+  );
   const retry = useCallback(() => setAttempt((value) => value + 1), []);
   useEffect(() => {
     let active = true;
     let busy = false;
-    let final = false;
+    let final =
+      updated.current?.id === id &&
+      FINAL_STATUSES.includes(updated.current.status);
     let timer: ReturnType<typeof setTimeout> | undefined;
     setState((previous) =>
       previous.id === id ? previous : { id, failures: 0 },
@@ -22,13 +36,14 @@ export function useProposalPolling(id: string) {
     const refresh = async () => {
       if (!active || busy || final || document.hidden) return;
       busy = true;
+      const version = generation.current;
       try {
         const proposal = await getProposal(id);
-        if (!active) return;
+        if (!active || version !== generation.current) return;
         final = FINAL_STATUSES.includes(proposal.status);
         setState({ id, proposal, failures: 0 });
       } catch (error: unknown) {
-        if (!active) return;
+        if (!active || version !== generation.current) return;
         const apiError =
           typeof error === "object" && error !== null && "message" in error
             ? {
@@ -60,5 +75,9 @@ export function useProposalPolling(id: string) {
       document.removeEventListener("visibilitychange", visibility);
     };
   }, [id, attempt]);
-  return { ...(state.id === id ? state : { id, failures: 0 }), retry };
+  return {
+    ...(state.id === id ? state : { id, failures: 0 }),
+    retry,
+    acceptProposal,
+  };
 }

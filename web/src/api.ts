@@ -39,3 +39,6 @@ export const postChat = (input: ChatInput): Promise<ChatResponse> =>
   request("POST", "/api/chat", input);
 export const getProposal = (id: string): Promise<Proposal> =>
   request("GET", `/api/proposals/${encodeURIComponent(id)}`);
+
+export const postDecision = (id: string, action: "approve" | "reject"): Promise<Proposal> =>
+  request("POST", `/api/proposals/${encodeURIComponent(id)}/decision`, { action });
