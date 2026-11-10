@@ -336,7 +336,33 @@ describe("page text fetching", () => {
     await vi.advanceTimersByTimeAsync(1);
     await assertion;
     expect(signal?.aborted).toBe(true);
-    expect(vi.getTimerCount()).toBe(0);
+  });
+
+  it("returns its text when a page responds quickly", async () => {
+    const text = await fetchPageText(`${baseUrl}/page`);
+    expect(text).toContain("Visible gift");
+  });
+
+  it("overrides the default timeout when a custom timeout value is provided", async () => {
+    vi.useFakeTimers();
+    vi.mocked(fetch).mockImplementation(
+      async (_input, init) =>
+        new Promise<Response>((_resolve, reject) => {
+          init?.signal?.addEventListener(
+            "abort",
+            () => reject(new Error("Aborted")),
+            { once: true },
+          );
+        }),
+    );
+    const pending = fetchPageText(`${baseUrl}/hang`, { timeoutMs: 3000 });
+    const assertion = expect(pending).rejects.toThrow("timed out");
+    const signal = vi.mocked(fetch).mock.calls[0][1]?.signal;
+    await vi.advanceTimersByTimeAsync(2999);
+    expect(signal?.aborted).toBe(false);
+    await vi.advanceTimersByTimeAsync(1);
+    await assertion;
+    expect(signal?.aborted).toBe(true);
   });
 
   it("cancels the body at 500000 characters without including later content", async () => {

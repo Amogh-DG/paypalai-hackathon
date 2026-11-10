@@ -23,6 +23,9 @@ export async function searchProducts(
     .map((product) => ({ ...product }));
 }
 
-export async function fetchPageText(url: string): Promise<string> {
-  return extractPageText(await fetchPageHtml(url));
+export async function fetchPageText(
+  url: string,
+  options?: { timeoutMs?: number },
+): Promise<string> {
+  return extractPageText(await fetchPageHtml(url, options));
 }
