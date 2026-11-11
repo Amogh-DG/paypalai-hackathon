@@ -1,5 +1,6 @@
 import { GeminiLlmClient } from "./llm.gemini.js";
 import { AppError } from "../http/errors.js";
+import { DemoAttackLlmClient } from "./llm.demo.js";
 
 export type JsonValue =
   null | boolean | number | string | JsonValue[] | { [key: string]: JsonValue };
@@ -36,5 +37,8 @@ export function getLlmClient(options: { client?: LlmClient } = {}): LlmClient {
       "internal_error",
       "Unsupported LLM_PROVIDER; expected gemini.",
     );
-  return options.client ?? new GeminiLlmClient();
+  const client = options.client ?? new GeminiLlmClient();
+  return process.env.AGENT_DEMO_ATTACK === "true"
+    ? new DemoAttackLlmClient(client)
+    : client;
 }
