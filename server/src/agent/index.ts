@@ -1,6 +1,10 @@
 import { getLlmClient, type LlmClient, type LlmMessage } from "./llm.js";
 import { getSystemPrompt } from "./prompts.js";
-import { executeTool, toolDeclarations } from "./tools.js";
+import {
+  createToolExecutionContext,
+  executeTool,
+  toolDeclarations,
+} from "./tools.js";
 
 const sessions = new Map<string, LlmMessage[]>();
 
@@ -29,6 +33,7 @@ export async function runAgentWith(
   messages.push({ role: "user", text: message });
   const proposalIds: string[] = [];
   const toolTrace: { tool: string; summary: string }[] = [];
+  const toolContext = createToolExecutionContext();
   const systemInstruction = getSystemPrompt();
 
   for (let step = 0; step < 8; step += 1) {
@@ -43,7 +48,7 @@ export async function runAgentWith(
     }
     const results: Extract<LlmMessage, { role: "tool" }>["results"] = [];
     for (const call of response.calls) {
-      const outcome = await executeTool(call);
+      const outcome = await executeTool(call, toolContext);
       results.push({
         ...(call.id === undefined ? {} : { id: call.id }),
         name: call.name,

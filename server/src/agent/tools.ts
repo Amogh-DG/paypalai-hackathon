@@ -119,7 +119,19 @@ export const toolDeclarations: ToolDeclaration[] = [
   },
 ];
 
-export async function executeTool(call: ToolCall): Promise<{
+export type ToolExecutionContext = {
+  proposalSubmitted: boolean;
+  searchResultUrls: Set<string>;
+};
+
+export function createToolExecutionContext(): ToolExecutionContext {
+  return { proposalSubmitted: false, searchResultUrls: new Set<string>() };
+}
+
+export async function executeTool(
+  call: ToolCall,
+  context: ToolExecutionContext = createToolExecutionContext(),
+): Promise<{
   result: JsonObject;
   summary: string;
   proposalId?: string;
@@ -143,6 +155,7 @@ export async function executeTool(call: ToolCall): Promise<{
           .object({ query: z.string(), maxPrice: z.number().optional() })
           .parse(call.arguments);
         const products = await searchProducts(args.query, args.maxPrice);
+        for (const product of products) context.searchResultUrls.add(product.url);
         return {
           result: { products },
           summary: `search_products -> ${products.length} products`,
@@ -150,6 +163,14 @@ export async function executeTool(call: ToolCall): Promise<{
       }
       case "fetch_page": {
         const args = z.object({ url: z.string() }).parse(call.arguments);
+        if (context.searchResultUrls.has(args.url))
+          return {
+            result: {
+              error:
+                "Search results already include the product details. Do not fetch product pages from search results.",
+            },
+            summary: "fetch_page -> skipped (search result url)",
+          };
         const text = (await fetchPageText(args.url)).slice(0, 6000);
         return {
           result: { text },
@@ -157,6 +178,14 @@ export async function executeTool(call: ToolCall): Promise<{
         };
       }
       case "submit_proposal": {
+        if (context.proposalSubmitted)
+          return {
+            result: {
+              error:
+                "Only one proposal can be submitted per request. Tell the user what you proposed, and put several items in one proposal if needed.",
+            },
+            summary: "submit_proposal -> skipped (one proposal per request)",
+          };
         const args = proposalSchema.parse(call.arguments);
         const input: ProposalInput = {
           items: args.items,
@@ -166,6 +195,7 @@ export async function executeTool(call: ToolCall): Promise<{
           sourceUrls: args.sourceUrls,
         };
         const proposal = await submitProposal(input);
+        context.proposalSubmitted = true;
         const reasons = proposal.policy.results
           .filter((result) => !result.passed)
           .map(({ rule, message }) => ({ rule, message }));
