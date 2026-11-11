@@ -1,5 +1,29 @@
 import type { MandateInput } from "@leash/shared";
 
+export const CATEGORY_OPTIONS = ["hiking", "books", "kitchen", "electronics"];
+
+export function createEmptyMandate(): MandateInput {
+  return {
+    owner: "",
+    currency: "USD",
+    totalBudget: Number.NaN,
+    perItemCap: Number.NaN,
+    approvalThreshold: Number.NaN,
+    maxQuantityPerItem: Number.NaN,
+    allowedCategories: [],
+    allowedMerchants: [],
+    shippingAddress: {
+      name: "",
+      line1: "",
+      city: "",
+      region: "",
+      postalCode: "",
+      country: "",
+    },
+    expiresAt: "",
+  };
+}
+
 export function createMandateDefaults(): MandateInput {
   const expiresAt = new Date();
   expiresAt.setDate(expiresAt.getDate() + 30);

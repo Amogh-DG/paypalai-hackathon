@@ -14,12 +14,15 @@ import { ErrorState } from "./ErrorState";
 export function ProposalCard({
   id,
   highlighted = false,
+  initialProposal,
 }: {
   id: string;
   highlighted?: boolean;
+  initialProposal?: import("@leash/shared").Proposal;
 }) {
-  const { proposal, error, failures, retry, acceptProposal } =
+  const { proposal: polledProposal, error, failures, retry, acceptProposal } =
     useProposalPolling(id);
+  const proposal = polledProposal ?? initialProposal;
   const approval = useApprovalCoordinator();
   const instance = useId();
   const coordinator = useRef(approval);

@@ -318,7 +318,7 @@ export const AuditPage: React.FC = () => {
               margin: 0,
               fontSize: "1.5rem",
               fontWeight: 700,
-              color: "#111827",
+              color: "var(--color-text-primary)",
             }}
           >
             Audit Log
@@ -327,7 +327,7 @@ export const AuditPage: React.FC = () => {
             style={{
               margin: "0.25rem 0 0 0",
               fontSize: "0.875rem",
-              color: "#6b7280",
+              color: "var(--color-text-secondary)",
             }}
           >
             Real-time chronological audit trail of all governance and payment
@@ -339,7 +339,7 @@ export const AuditPage: React.FC = () => {
           <div
             style={{
               fontSize: "0.8125rem",
-              color: "#6b7280",
+              color: "var(--color-text-secondary)",
             }}
           >
             Last updated: {lastUpdated.toLocaleTimeString()}

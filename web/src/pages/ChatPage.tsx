@@ -1,6 +1,7 @@
 import { useRef, useState } from "react";
 import { useSearchParams } from "react-router-dom";
-import { postChat } from "../api";
+import type { Proposal } from "@leash/shared";
+import { getProposal, postChat } from "../api";
 import { Button } from "../components/Button";
 import { EmptyState } from "../components/EmptyState";
 import { ErrorState } from "../components/ErrorState";
@@ -49,6 +50,25 @@ export function ChatPage() {
         message,
         ...(sessionId === undefined ? {} : { sessionId }),
       });
+      const uniqueProposalIds = [...new Set(response.proposalIds)];
+      let proposals: Record<string, Proposal> | undefined;
+      if (uniqueProposalIds.length > 0) {
+        const fetched = await Promise.all(
+          uniqueProposalIds.map(async (id) => {
+            try {
+              const p = await getProposal(id);
+              return [id, p] as const;
+            } catch {
+              return null;
+            }
+          }),
+        );
+        proposals = Object.fromEntries(
+          fetched.filter(
+            (item): item is readonly [string, Proposal] => item !== null,
+          ),
+        );
+      }
       setSessionId(response.sessionId);
       setMessages((previous) => [
         ...previous,
@@ -56,7 +76,8 @@ export function ChatPage() {
           id: nextId.current++,
           role: "assistant",
           text: response.reply,
-          proposalIds: [...new Set(response.proposalIds)],
+          proposalIds: uniqueProposalIds,
+          proposals,
           toolTrace: response.toolTrace,
         },
       ]);
@@ -81,8 +102,6 @@ export function ChatPage() {
       scrollEnd();
     }
   };
-  const suggestion =
-    "Find a birthday gift for my dad who likes hiking for under $50.";
   const linked =
     proposal &&
     !messages.some((message) => message.proposalIds?.includes(proposal));
@@ -118,27 +137,7 @@ export function ChatPage() {
             </section>
           )}
           {messages.length === 0 && (
-            <>
-              <EmptyState message="Find a gift within your mandate." />
-              <div style={{ display: "flex", flexWrap: "wrap", gap: 8 }}>
-                <Button
-                  variant="secondary"
-                  onClick={() => {
-                    setText(suggestion);
-                    input.current?.focus();
-                  }}
-                >
-                  {suggestion}
-                </Button>
-                <Button
-                  variant="secondary"
-                  disabled={sending}
-                  onClick={() => void send(suggestion)}
-                >
-                  Send
-                </Button>
-              </div>
-            </>
+            <EmptyState message="Ask for a gift, a book or something for the kitchen, and I will stay within your mandate." />
           )}
           {messages.map((message) => (
             <ChatMessage

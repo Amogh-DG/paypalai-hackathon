@@ -1,3 +1,4 @@
+import type { Proposal } from "@leash/shared";
 import type { ChatResponse } from "../api";
 import { ProposalCard } from "./ProposalCard";
 
@@ -6,6 +7,7 @@ export type TranscriptMessage = {
   role: "user" | "assistant";
   text: string;
   proposalIds?: string[];
+  proposals?: Record<string, Proposal>;
   toolTrace?: ChatResponse["toolTrace"];
 };
 
@@ -37,7 +39,12 @@ export function ChatMessage({
         </details>
       )}
       {message.proposalIds?.map((id) => (
-        <ProposalCard key={id} id={id} highlighted={id === highlightedId} />
+        <ProposalCard
+          key={id}
+          id={id}
+          highlighted={id === highlightedId}
+          initialProposal={message.proposals?.[id]}
+        />
       ))}
     </article>
   );

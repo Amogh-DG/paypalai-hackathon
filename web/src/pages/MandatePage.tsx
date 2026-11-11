@@ -11,7 +11,7 @@ import { ErrorState } from "../components/ErrorState";
 import { FormField } from "../components/FormField";
 import { TagInput } from "../components/TagInput";
 import { ProgressBar } from "../components/ProgressBar";
-import { createMandateDefaults } from "../mandateDefaults";
+import { CATEGORY_OPTIONS, createEmptyMandate, createMandateDefaults } from "../mandateDefaults";
 
 const inputStyle: CSSProperties = {
   width: "100%",
@@ -47,12 +47,8 @@ function localDateTime(iso: string): string {
 }
 
 export function MandatePage() {
-  const [defaults] = useState(createMandateDefaults);
-  const [form, setForm] = useState<MandateInput>(() => ({
-    ...defaults,
-    shippingAddress: { ...defaults.shippingAddress },
-  }));
-  const [expiry, setExpiry] = useState(() => localDateTime(defaults.expiresAt));
+  const [form, setForm] = useState<MandateInput>(createEmptyMandate);
+  const [expiry, setExpiry] = useState("");
   const [view, setView] = useState<MandateView | null>(null);
   const [loading, setLoading] = useState(true);
   const [loadError, setLoadError] = useState<string | null>(null);
@@ -61,6 +57,13 @@ export function MandatePage() {
   const formRef = useRef<HTMLFormElement>(null);
   const requestId = useRef(0);
   const saving = useRef(false);
+
+  const handleUseDemoValues = () => {
+    const demo = createMandateDefaults();
+    setForm(demo);
+    setExpiry(localDateTime(demo.expiresAt));
+    setSubmitError(null);
+  };
 
   const loadView = useCallback(async () => {
     const id = ++requestId.current;
@@ -139,6 +142,8 @@ export function MandatePage() {
         expiresAt: date.toISOString(),
       });
       window.dispatchEvent(new CustomEvent("mandate-updated"));
+      setForm(createEmptyMandate());
+      setExpiry("");
       await loadView();
     } catch (error: unknown) {
       setSubmitError(messageOf(error));
@@ -260,7 +265,7 @@ export function MandatePage() {
             <fieldset style={{ border: 0, margin: 0, padding: 0, minWidth: 0 }}>
               <legend style={{ marginBottom: 8 }}>Allowed categories</legend>
               <div style={{ display: "flex", flexWrap: "wrap", gap: 8 }}>
-                {defaults.allowedCategories.map((category) => (
+                {CATEGORY_OPTIONS.map((category) => (
                   <button
                     key={category}
                     type="button"
@@ -336,12 +341,19 @@ export function MandatePage() {
             <div>
               Currency: <strong>{form.currency}</strong>
             </div>
-            <div>
+            <div style={{ display: "flex", gap: 12, flexWrap: "wrap", alignItems: "center" }}>
               <Button
                 disabled={submitting}
                 onClick={() => formRef.current?.requestSubmit()}
               >
                 Save mandate
+              </Button>
+              <Button
+                variant="secondary"
+                disabled={submitting}
+                onClick={handleUseDemoValues}
+              >
+                Use demo values
               </Button>
             </div>
           </fieldset>
