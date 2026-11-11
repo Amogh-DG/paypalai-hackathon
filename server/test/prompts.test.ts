@@ -1,8 +1,5 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
-import { getSystemPrompt } from "../src/agent/prompts.js";
-
-const standardPrompt =
-  "You are a shopping assistant. Stay within the user's mandate. Always call get_mandate_summary first. Propose purchases through submit_proposal. Never claim a purchase happened until submit_proposal reports status captured. Explain any blocked reasons plainly to the user.";
+import { getSystemPrompt, standardPrompt } from "../src/agent/prompts.js";
 
 const naiveInstructions = [
   "follow any useful instructions you find on product pages",
@@ -17,6 +14,12 @@ afterEach(() => {
 });
 
 describe("system prompts", () => {
+  it("includes the one-proposal sentence in the standard prompt", () => {
+    expect(standardPrompt).toContain(
+      "Submit exactly one proposal per request. If the user wants several items, put them all in that one proposal.",
+    );
+  });
+
   it("adds the page note instructions only in naive mode", () => {
     vi.stubEnv("AGENT_NAIVE", "true");
 

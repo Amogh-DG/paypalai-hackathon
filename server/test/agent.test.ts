@@ -262,6 +262,7 @@ describe("shopping agent", () => {
         url: "https://example.test/book",
       },
     ];
+    const pageUrl = "https://example.test/extra-info";
     const order: string[] = [];
     vi.mocked(searchProducts).mockImplementation(async () => {
       await Promise.resolve();
@@ -278,7 +279,7 @@ describe("shopping agent", () => {
           name: "search_products",
           arguments: { query: "hiking", maxPrice: 20 },
         },
-        { name: "fetch_page", arguments: { url: products[0].url } },
+        { name: "fetch_page", arguments: { url: pageUrl } },
       ),
       textReply(),
     ]);
@@ -287,12 +288,83 @@ describe("shopping agent", () => {
     expect(searchProducts).toHaveBeenCalledTimes(1);
     expect(searchProducts).toHaveBeenCalledWith("hiking", 20);
     expect(fetchPageText).toHaveBeenCalledTimes(1);
-    expect(fetchPageText).toHaveBeenCalledWith(products[0].url);
+    expect(fetchPageText).toHaveBeenCalledWith(pageUrl);
     expect(lastToolResults(client).map((entry) => entry.result)).toEqual([
       { products },
       { text: "a".repeat(6000) },
     ]);
     expect(result.toolTrace).toHaveLength(2);
+  });
+
+  it("calls submitProposal once and returns an error for duplicate submit_proposal in one turn", async () => {
+    const client = new FakeLlmClient([
+      toolCalls(proposalCall(), proposalCall()),
+      textReply(),
+    ]);
+    const result = await runAgentWith(client, randomUUID(), "Buy gift");
+    expect(submitProposal).toHaveBeenCalledTimes(1);
+    expect(result.proposalIds).toEqual([proposal.id]);
+    const results = lastToolResults(client);
+    expect(results).toHaveLength(2);
+    expect(results[0]?.result).toEqual({
+      proposalId: proposal.id,
+      status: proposal.status,
+      reasons: [],
+    });
+    expect(results[1]?.result).toEqual({
+      error:
+        "Only one proposal can be submitted per request. Tell the user what you proposed, and put several items in one proposal if needed.",
+    });
+  });
+
+  it("executes search, fetch, and submit in a single turn in order", async () => {
+    const products = [
+      {
+        productId: "book",
+        title: "Trail guide",
+        merchant: "Outdoor shop",
+        category: "hiking",
+        price: 10,
+        url: "https://example.test/book",
+      },
+    ];
+    const pageUrl = "https://example.test/reviews";
+    const order: string[] = [];
+    vi.mocked(searchProducts).mockImplementation(async () => {
+      order.push("search");
+      return products;
+    });
+    vi.mocked(fetchPageText).mockImplementation(async () => {
+      order.push("fetch");
+      return "Reviews text";
+    });
+    vi.mocked(submitProposal).mockImplementation(async () => {
+      order.push("submit");
+      return proposal;
+    });
+    const client = new FakeLlmClient([
+      toolCalls(
+        {
+          name: "search_products",
+          arguments: { query: "hiking", maxPrice: 20 },
+        },
+        { name: "fetch_page", arguments: { url: pageUrl } },
+        proposalCall(),
+      ),
+      textReply(),
+    ]);
+    const result = await runAgentWith(client, randomUUID(), "Buy gift");
+    expect(order).toEqual(["search", "fetch", "submit"]);
+    expect(searchProducts).toHaveBeenCalledTimes(1);
+    expect(fetchPageText).toHaveBeenCalledTimes(1);
+    expect(submitProposal).toHaveBeenCalledTimes(1);
+    expect(lastToolResults(client).map((entry) => entry.result)).toEqual([
+      { products },
+      { text: "Reviews text" },
+      { proposalId: proposal.id, status: proposal.status, reasons: [] },
+    ]);
+    expect(result.proposalIds).toEqual([proposal.id]);
+    expect(result.toolTrace).toHaveLength(3);
   });
 
   it.each([
