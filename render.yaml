@@ -23,6 +23,8 @@ services:
         value: gemini-1.5-flash
       - key: AGENT_NAIVE
         value: "false"
+      - key: AGENT_DEMO_ATTACK
+        value: "true"
       - key: MANDATE_SIGNING_SECRET
         sync: false
       - key: PUBLIC_BASE_URL
