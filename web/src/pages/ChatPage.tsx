@@ -161,20 +161,35 @@ export function ChatPage() {
           }}
           style={{
             display: "flex",
-            alignItems: "end",
+            alignItems: "center",
             gap: 12,
             paddingTop: 16,
             borderTop: "1px solid var(--color-border)",
           }}
         >
-          <label style={{ flex: 1, minWidth: 0 }}>
-            Message
+          <label style={{ flex: 1, minWidth: 0, position: "relative" }}>
+            <span
+              style={{
+                position: "absolute",
+                width: 1,
+                height: 1,
+                padding: 0,
+                margin: -1,
+                overflow: "hidden",
+                clip: "rect(0, 0, 0, 0)",
+                whiteSpace: "nowrap",
+                border: 0,
+              }}
+            >
+              Message
+            </span>
             <textarea
               ref={input}
               value={text}
               disabled={sending}
               maxLength={4000}
-              rows={3}
+              rows={1}
+              placeholder="start typing here... "
               onChange={(event) => setText(event.target.value)}
               onKeyDown={(event) => {
                 if (
@@ -189,20 +204,28 @@ export function ChatPage() {
               style={{
                 display: "block",
                 width: "100%",
+                height: 44,
                 boxSizing: "border-box",
                 resize: "none",
-                padding: 12,
+                padding: "10px 14px",
                 color: "var(--color-text-primary)",
                 background: "var(--color-bg)",
                 border: "1px solid var(--color-border-strong)",
                 borderRadius: "var(--radius-sm)",
                 font: "inherit",
+                lineHeight: "22px",
               }}
             />
           </label>
           <Button
             disabled={sending || !text.trim()}
             onClick={() => void send(text)}
+            style={{
+              height: 44,
+              display: "inline-flex",
+              alignItems: "center",
+              justifyContent: "center",
+            }}
           >
             Send
           </Button>

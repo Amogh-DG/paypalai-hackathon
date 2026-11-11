@@ -1,9 +1,10 @@
-import type { MouseEventHandler, ReactNode } from "react";
+import type { CSSProperties, MouseEventHandler, ReactNode } from "react";
 
 type ButtonProps = {
   variant?: "primary" | "secondary";
   onClick?: MouseEventHandler<HTMLButtonElement>;
   disabled?: boolean;
+  style?: CSSProperties;
   children: ReactNode;
 };
 
@@ -11,6 +12,7 @@ export function Button({
   variant = "primary",
   onClick,
   disabled = false,
+  style,
   children,
 }: ButtonProps) {
   return (
@@ -19,6 +21,7 @@ export function Button({
       className={`button button--${variant}`}
       onClick={onClick}
       disabled={disabled}
+      style={style}
     >
       {children}
     </button>

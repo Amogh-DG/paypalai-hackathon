@@ -58,6 +58,11 @@ textarea,
 select {
   font: inherit;
 }
+textarea::placeholder,
+input::placeholder {
+  color: var(--color-text-tertiary);
+  opacity: 1;
+}
 a {
   color: var(--color-text-primary);
 }
