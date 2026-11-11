@@ -27,7 +27,11 @@ export function ChatMessage({
           <summary>Tool activity</summary>
           <ul>
             {message.toolTrace.map((entry, index) => (
-              <li key={index}>{entry.summary}</li>
+              <li key={index}>
+                <span style={{ color: "var(--color-text-primary)" }}>
+                  {entry.summary}
+                </span>
+              </li>
             ))}
           </ul>
         </details>

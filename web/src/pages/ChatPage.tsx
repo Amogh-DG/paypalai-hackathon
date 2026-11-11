@@ -1,4 +1,5 @@
 import { useRef, useState } from "react";
+import { useSearchParams } from "react-router-dom";
 import { postChat } from "../api";
 import { Button } from "../components/Button";
 import { EmptyState } from "../components/EmptyState";
@@ -6,11 +7,11 @@ import { ErrorState } from "../components/ErrorState";
 import { LoadingState } from "../components/LoadingState";
 import { ChatMessage, type TranscriptMessage } from "../components/ChatMessage";
 import { ProposalCard } from "../components/ProposalCard";
-import { useProposalParam } from "../hooks/useProposalParam";
 import { ApprovalProvider } from "../components/ApprovalDialog";
 
 export function ChatPage() {
-  const proposal = useProposalParam();
+  const [searchParams, setSearchParams] = useSearchParams();
+  const proposal = searchParams.get("proposal");
   const [messages, setMessages] = useState<TranscriptMessage[]>([]);
   const [sessionId, setSessionId] = useState<string>();
   const [text, setText] = useState("");
@@ -28,6 +29,11 @@ export function ChatPage() {
   const send = async (value: string, retry = false) => {
     const message = value.trim();
     if (!message || busy.current) return;
+    if (!retry && proposal) {
+      const nextParams = new URLSearchParams(searchParams);
+      nextParams.delete("proposal");
+      setSearchParams(nextParams, { replace: true });
+    }
     busy.current = true;
     lastMessage.current = message;
     setSending(true);
@@ -66,7 +72,7 @@ export function ChatPage() {
           : "Unable to send your message.";
       setError(
         code === "model_busy"
-          ? "The model is busy. Try again in a moment."
+          ? "The assistant is busy. Try again in a moment."
           : message,
       );
     } finally {
@@ -76,7 +82,7 @@ export function ChatPage() {
     }
   };
   const suggestion =
-    "Find a birthday gift for my dad who likes hiking, under 50.";
+    "Find a birthday gift for my dad who likes hiking for under $50.";
   const linked =
     proposal &&
     !messages.some((message) => message.proposalIds?.includes(proposal));
@@ -114,15 +120,24 @@ export function ChatPage() {
           {messages.length === 0 && (
             <>
               <EmptyState message="Find a gift within your mandate." />
-              <Button
-                variant="secondary"
-                onClick={() => {
-                  setText(suggestion);
-                  input.current?.focus();
-                }}
-              >
-                {suggestion}
-              </Button>
+              <div style={{ display: "flex", flexWrap: "wrap", gap: 8 }}>
+                <Button
+                  variant="secondary"
+                  onClick={() => {
+                    setText(suggestion);
+                    input.current?.focus();
+                  }}
+                >
+                  {suggestion}
+                </Button>
+                <Button
+                  variant="secondary"
+                  disabled={sending}
+                  onClick={() => void send(suggestion)}
+                >
+                  Send
+                </Button>
+              </div>
             </>
           )}
           {messages.map((message) => (

@@ -56,7 +56,7 @@ export function ProposalCard({
           : "Unable to save your decision.";
       if (code === "invalid_state") {
         approval.close(instance);
-        setNote("This proposal was already decided.");
+        setNote("This proposal has already been decided.");
         try {
           acceptProposal(await getProposal(id));
         } catch (reloadError: unknown) {
@@ -66,12 +66,12 @@ export function ProposalCard({
             "code" in reloadError &&
             reloadError.code === "not_found"
           )
-            setNote("Proposal not found.");
+            setNote("Proposal not found");
           retry();
         }
       } else
         setDecisionError(
-          code === "not_found" ? "Proposal not found." : message,
+          code === "not_found" ? "Proposal not found" : message,
         );
     } finally {
       pending.current = false;
@@ -89,11 +89,11 @@ export function ProposalCard({
     }
   };
   const finalSummary = {
-    captured: "Payment captured.",
-    voided: "Payment voided.",
+    captured: "Payment completed.",
+    voided: "Payment authorization canceled.",
     rejected: "You rejected this proposal.",
     failed: "Payment failed.",
-    blocked: "Blocked by policy. Nothing was charged.",
+    blocked: "This proposal was blocked. Nothing was charged.",
   };
   useEffect(() => {
     if (highlighted) element.current?.scrollIntoView({ block: "nearest" });
@@ -214,7 +214,8 @@ export function ProposalCard({
             )}
             {failures >= 3 && (
               <small role="status">
-                Updates paused. Retrying automatically.
+                Proposal updates are temporarily unavailable. Retrying
+                automatically.
               </small>
             )}
           </>

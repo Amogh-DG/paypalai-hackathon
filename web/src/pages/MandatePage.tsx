@@ -138,6 +138,7 @@ export function MandatePage() {
         allowedMerchants: merchants,
         expiresAt: date.toISOString(),
       });
+      window.dispatchEvent(new CustomEvent("mandate-updated"));
       await loadView();
     } catch (error: unknown) {
       setSubmitError(messageOf(error));

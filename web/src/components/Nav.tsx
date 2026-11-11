@@ -8,29 +8,36 @@ export function Nav() {
 
   useEffect(() => {
     let active = true;
-    getMandateView().then(
-      (mandate) => {
-        if (active) {
-          const remaining = new Intl.NumberFormat("en-US", {
-            style: "currency",
-            currency: mandate.currency,
-          }).format(mandate.remaining);
-          setMandateLabel(`${mandate.owner} — ${remaining} left`);
-        }
-      },
-      (error: unknown) => {
-        if (active) {
-          const missing =
-            typeof error === "object" &&
-            error !== null &&
-            "code" in error &&
-            error.code === "no_mandate";
-          setMandateLabel(missing ? "No mandate" : "Mandate unavailable");
-        }
-      },
-    );
+    let latestRequest = 0;
+    const refresh = () => {
+      const request = ++latestRequest;
+      getMandateView().then(
+        (mandate) => {
+          if (active && request === latestRequest) {
+            const remaining = new Intl.NumberFormat("en-US", {
+              style: "currency",
+              currency: mandate.currency,
+            }).format(mandate.remaining);
+            setMandateLabel(`${mandate.owner} — ${remaining} left`);
+          }
+        },
+        (error: unknown) => {
+          if (active && request === latestRequest) {
+            const missing =
+              typeof error === "object" &&
+              error !== null &&
+              "code" in error &&
+              error.code === "no_mandate";
+            setMandateLabel(missing ? "No mandate" : "Mandate unavailable");
+          }
+        },
+      );
+    };
+    window.addEventListener("mandate-updated", refresh);
+    refresh();
     return () => {
       active = false;
+      window.removeEventListener("mandate-updated", refresh);
     };
   }, []);
 
