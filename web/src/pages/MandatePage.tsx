@@ -18,8 +18,8 @@ const inputStyle: CSSProperties = {
   minWidth: 0,
   padding: "10px 12px",
   border: "1px solid var(--color-border-strong)",
-  borderRadius: 8,
-  background: "var(--color-surface-solid)",
+  borderRadius: 2,
+  background: "var(--color-bg)",
   color: "var(--color-text-primary)",
   font: "inherit",
   colorScheme: "dark",
@@ -209,7 +209,7 @@ export function MandatePage() {
               style={{
                 padding: 14,
                 border: "1px solid var(--color-red)",
-                borderRadius: 8,
+                borderRadius: 2,
                 color: "var(--color-red)",
                 background: "var(--color-red-bg)",
               }}

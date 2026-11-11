@@ -2,16 +2,16 @@ import type { ProposalStatus } from "@leash/shared";
 
 const statuses: Record<
   ProposalStatus,
-  { color: "red" | "amber" | "blue" | "green"; label: string }
+  { color: "red" | "amber" | "neutral" | "green"; label: string }
 > = {
   blocked: { color: "red", label: "Blocked" },
   rejected: { color: "red", label: "Rejected" },
   voided: { color: "red", label: "Voided" },
   failed: { color: "red", label: "Failed" },
   needs_approval: { color: "amber", label: "Needs approval" },
-  approved: { color: "blue", label: "Approved" },
-  awaiting_buyer: { color: "blue", label: "Awaiting buyer" },
-  authorized: { color: "blue", label: "Authorized" },
+  approved: { color: "neutral", label: "Approved" },
+  awaiting_buyer: { color: "neutral", label: "Awaiting buyer" },
+  authorized: { color: "neutral", label: "Authorized" },
   captured: { color: "green", label: "Captured" },
 };
 

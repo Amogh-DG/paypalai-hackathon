@@ -27,14 +27,15 @@ export function TagInput({
   };
   return (
     <div
+      className="tag-input"
       style={{
-        border: "1px solid var(--color-border-strong)",
-        borderRadius: 8,
+        border: "1px solid var(--color-line)",
+        borderRadius: 2,
         padding: 10,
         display: "flex",
         flexWrap: "wrap",
         gap: 8,
-        background: "var(--color-surface-solid)",
+        background: "var(--color-bg)",
       }}
     >
       {value.map((tag) => (
@@ -44,8 +45,9 @@ export function TagInput({
             display: "inline-flex",
             alignItems: "center",
             gap: 6,
-            borderRadius: 999,
-            background: "var(--color-surface-strong)",
+            borderRadius: 2,
+            background: "transparent",
+            border: "1px solid var(--color-line)",
             padding: "3px 10px",
           }}
         >

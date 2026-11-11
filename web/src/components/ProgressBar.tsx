@@ -11,9 +11,9 @@ export function ProgressBar({ value, max }: { value: number; max: number }) {
       aria-valuemax={100}
       aria-valuenow={percent}
       style={{
-        height: 6,
-        borderRadius: 999,
-        background: "rgba(255,255,255,0.08)",
+        height: 4,
+        borderRadius: 0,
+        background: "var(--color-line)",
         overflow: "hidden",
       }}
     >
@@ -21,7 +21,7 @@ export function ProgressBar({ value, max }: { value: number; max: number }) {
         style={{
           height: "100%",
           width: `${percent}%`,
-          background: "white",
+          background: "var(--color-text-primary)",
           borderRadius: "inherit",
         }}
       />

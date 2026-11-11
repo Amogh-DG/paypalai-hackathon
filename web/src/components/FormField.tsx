@@ -13,7 +13,7 @@ export function FormField({
 }) {
   return (
     <div style={{ display: "grid", gap: 6, minWidth: 0 }}>
-      <label htmlFor={htmlFor} style={{ fontWeight: 500 }}>
+      <label htmlFor={htmlFor} className="eyebrow">
         {label}
       </label>
       {children}

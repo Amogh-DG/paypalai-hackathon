@@ -98,7 +98,7 @@ export function ChatPage() {
           minWidth: 0,
         }}
       >
-        <style>{`.chat-proposals .card { backdrop-filter: none; -webkit-backdrop-filter: none; } .chat-proposals .card::before { display: none; }`}</style>
+        <style>{`.chat-proposals .card { box-shadow: none; }`}</style>
         <h2 style={{ marginTop: 0 }}>Chat</h2>
         <div
           ref={transcript}
@@ -194,7 +194,7 @@ export function ChatPage() {
                 resize: "none",
                 padding: 12,
                 color: "var(--color-text-primary)",
-                background: "var(--color-surface-solid)",
+                background: "var(--color-bg)",
                 border: "1px solid var(--color-border-strong)",
                 borderRadius: "var(--radius-sm)",
                 font: "inherit",
