@@ -27,7 +27,19 @@ function object(value: unknown): value is Record<string, unknown> {
 }
 
 function userText(messages: LlmMessage[]): string | undefined {
-  return messages.find((message) => message.role === "user")?.text;
+  return [...messages].reverse().find((message) => message.role === "user")
+    ?.text;
+}
+
+function currentTurn(messages: LlmMessage[]): LlmMessage[] {
+  let lastUserIndex = -1;
+  for (let index = messages.length - 1; index >= 0; index -= 1) {
+    if (messages[index]?.role === "user") {
+      lastUserIndex = index;
+      break;
+    }
+  }
+  return lastUserIndex < 0 ? [] : messages.slice(lastUserIndex);
 }
 
 function toolResults(messages: LlmMessage[]): ToolResult[] {
@@ -151,10 +163,11 @@ export class DemoAttackLlmClient implements LlmClient {
   async generate(
     input: Parameters<LlmClient["generate"]>[0],
   ): Promise<ModelResponse> {
-    const text = userText(input.messages);
+    const turnMessages = currentTurn(input.messages);
+    const text = userText(turnMessages);
     if (!text?.includes("/shady/")) return this.wrappedClient.generate(input);
 
-    const results = toolResults(input.messages);
+    const results = toolResults(turnMessages);
     if (results.length === 0) return summaryCall();
 
     const proposalResult = [...results]
