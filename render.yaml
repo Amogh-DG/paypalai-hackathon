@@ -16,14 +16,12 @@ services:
       - key: PAYPAL_MODE
         value: mock
       - key: DATABASE_PATH
-        value: leash.db
+        value: /tmp/leash.db
       - key: LLM_PROVIDER
         value: gemini
       - key: LLM_MODEL
-        value: gemini-1.5-flash
+        sync: false
       - key: AGENT_NAIVE
-        value: "false"
-      - key: AGENT_DEMO_ATTACK
         value: "true"
       - key: MANDATE_SIGNING_SECRET
         sync: false
