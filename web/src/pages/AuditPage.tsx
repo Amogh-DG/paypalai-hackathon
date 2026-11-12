@@ -15,6 +15,21 @@ import {
 } from "../audit/helpers";
 import { DetailPanel } from "../audit/DetailPanel";
 
+const gridThemeStyle = {
+  "--ag-background-color": "var(--color-bg)",
+  "--ag-foreground-color": "var(--color-text-primary)",
+  "--ag-data-color": "var(--color-text-primary)",
+  "--ag-secondary-foreground-color": "var(--color-text-secondary)",
+  "--ag-header-background-color": "var(--color-surface)",
+  "--ag-header-foreground-color": "var(--color-text-primary)",
+  "--ag-accent-color": "var(--color-text-primary)",
+  "--ag-odd-row-background-color": "var(--color-bg)",
+  "--ag-border-color": "var(--color-line)",
+  "--ag-row-border-color": "var(--color-line)",
+  "--ag-selected-row-background-color": "var(--color-surface-raised)",
+  "--ag-row-hover-color": "var(--color-surface-raised)",
+} as React.CSSProperties;
+
 export const AuditPage: React.FC = () => {
   const [entries, setEntries] = useState<AuditEntry[]>([]);
   const [isLoading, setIsLoading] = useState<boolean>(true);
@@ -158,11 +173,11 @@ export const AuditPage: React.FC = () => {
               display: "inline-block",
               padding: "2px 8px",
               borderRadius: "4px",
-              backgroundColor: "#f3f4f6",
-              color: "#374151",
+              backgroundColor: "var(--color-surface-raised)",
+              color: "var(--color-text-primary)",
               fontSize: "12px",
               fontFamily: "monospace",
-              border: "1px solid #e5e7eb",
+              border: "1px solid var(--color-line)",
               lineHeight: "1.4",
             }}
           >
@@ -180,7 +195,7 @@ export const AuditPage: React.FC = () => {
         cellRenderer: (params: CustomCellRendererProps<AuditEntry>) => {
           const pid = params.value as string | undefined;
           if (!pid) {
-            return <span style={{ color: "#9ca3af" }}>-</span>;
+            return <span style={{ color: "var(--color-text-tertiary)" }}>-</span>;
           }
           return (
             <button
@@ -192,7 +207,7 @@ export const AuditPage: React.FC = () => {
               style={{
                 background: "none",
                 border: "none",
-                color: "#0070ba",
+                color: "var(--color-text-primary)",
                 textDecoration: "underline",
                 cursor: "pointer",
                 padding: 0,
@@ -352,10 +367,10 @@ export const AuditPage: React.FC = () => {
           style={{
             padding: "0.75rem 1rem",
             marginBottom: "1rem",
-            backgroundColor: "#fffbeb",
-            border: "1px solid #fcd34d",
+            backgroundColor: "var(--color-amber-bg)",
+            border: "1px solid var(--color-amber)",
             borderRadius: "6px",
-            color: "#92400e",
+            color: "var(--color-amber)",
             fontSize: "0.875rem",
             display: "flex",
             justifyContent: "space-between",
@@ -372,12 +387,12 @@ export const AuditPage: React.FC = () => {
             onClick={() => fetchAudit(false)}
             style={{
               padding: "0.25rem 0.5rem",
-              backgroundColor: "#ffffff",
-              border: "1px solid #d97706",
+              backgroundColor: "var(--color-surface)",
+              border: "1px solid var(--color-amber)",
               borderRadius: "4px",
               cursor: "pointer",
               fontSize: "0.75rem",
-              color: "#92400e",
+              color: "var(--color-amber)",
               fontWeight: 600,
             }}
           >
@@ -391,22 +406,22 @@ export const AuditPage: React.FC = () => {
           style={{
             padding: "4rem 2rem",
             textAlign: "center",
-            backgroundColor: "#ffffff",
+            backgroundColor: "var(--color-surface)",
             borderRadius: "8px",
-            border: "1px solid #e5e7eb",
+            border: "1px solid var(--color-line)",
           }}
         >
           <div
             style={{
               fontSize: "1.125rem",
               fontWeight: 600,
-              color: "#374151",
+              color: "var(--color-text-primary)",
               marginBottom: "0.5rem",
             }}
           >
             Loading audit log...
           </div>
-          <div style={{ color: "#6b7280", fontSize: "0.875rem" }}>
+          <div style={{ color: "var(--color-text-secondary)", fontSize: "0.875rem" }}>
             Connecting to server and fetching recent entries.
           </div>
         </div>
@@ -415,16 +430,16 @@ export const AuditPage: React.FC = () => {
           style={{
             padding: "3rem 2rem",
             textAlign: "center",
-            backgroundColor: "#fef2f2",
+            backgroundColor: "var(--color-red-bg)",
             borderRadius: "8px",
-            border: "1px solid #fca5a5",
+            border: "1px solid var(--color-red)",
           }}
         >
           <div
             style={{
               fontSize: "1.125rem",
               fontWeight: 600,
-              color: "#991b1b",
+              color: "var(--color-red)",
               marginBottom: "0.5rem",
             }}
           >
@@ -432,7 +447,7 @@ export const AuditPage: React.FC = () => {
           </div>
           <div
             style={{
-              color: "#b91c1c",
+              color: "var(--color-red)",
               fontSize: "0.875rem",
               marginBottom: "1rem",
             }}
@@ -444,8 +459,8 @@ export const AuditPage: React.FC = () => {
             onClick={() => fetchAudit(true)}
             style={{
               padding: "0.5rem 1rem",
-              backgroundColor: "#b91c1c",
-              color: "#ffffff",
+              backgroundColor: "var(--color-red)",
+              color: "var(--color-ink)",
               border: "none",
               borderRadius: "4px",
               cursor: "pointer",
@@ -461,16 +476,16 @@ export const AuditPage: React.FC = () => {
           style={{
             padding: "4rem 2rem",
             textAlign: "center",
-            backgroundColor: "#ffffff",
+            backgroundColor: "var(--color-surface)",
             borderRadius: "8px",
-            border: "1px solid #e5e7eb",
+            border: "1px solid var(--color-line)",
           }}
         >
           <div
             style={{
               fontSize: "1.125rem",
               fontWeight: 600,
-              color: "#111827",
+              color: "var(--color-text-primary)",
               marginBottom: "0.5rem",
             }}
           >
@@ -479,7 +494,7 @@ export const AuditPage: React.FC = () => {
           <p
             style={{
               margin: 0,
-              color: "#6b7280",
+              color: "var(--color-text-secondary)",
               fontSize: "0.875rem",
               maxWidth: "500px",
               marginLeft: "auto",
@@ -499,8 +514,8 @@ export const AuditPage: React.FC = () => {
               gap: "0.75rem",
               alignItems: "center",
               padding: "1rem",
-              backgroundColor: "#f9fafb",
-              border: "1px solid #e5e7eb",
+              backgroundColor: "var(--color-surface)",
+              border: "1px solid var(--color-line)",
               borderRadius: "8px 8px 0 0",
               borderBottom: "none",
             }}
@@ -516,7 +531,9 @@ export const AuditPage: React.FC = () => {
                   boxSizing: "border-box",
                   padding: "0.5rem 0.75rem",
                   fontSize: "0.875rem",
-                  border: "1px solid #d1d5db",
+                  backgroundColor: "var(--color-surface)",
+                  color: "var(--color-text-primary)",
+                  border: "1px solid var(--color-line)",
                   borderRadius: "4px",
                   outline: "none",
                 }}
@@ -532,9 +549,10 @@ export const AuditPage: React.FC = () => {
                   boxSizing: "border-box",
                   padding: "0.5rem 0.75rem",
                   fontSize: "0.875rem",
-                  border: "1px solid #d1d5db",
+                  border: "1px solid var(--color-line)",
                   borderRadius: "4px",
-                  backgroundColor: "#ffffff",
+                  backgroundColor: "var(--color-surface)",
+                  color: "var(--color-text-primary)",
                   outline: "none",
                 }}
               >
@@ -558,7 +576,9 @@ export const AuditPage: React.FC = () => {
                   boxSizing: "border-box",
                   padding: "0.5rem 0.75rem",
                   fontSize: "0.875rem",
-                  border: "1px solid #d1d5db",
+                  backgroundColor: "var(--color-surface)",
+                  color: "var(--color-text-primary)",
+                  border: "1px solid var(--color-line)",
                   borderRadius: "4px",
                   outline: "none",
                 }}
@@ -571,13 +591,13 @@ export const AuditPage: React.FC = () => {
                 onClick={handleClearFilters}
                 style={{
                   padding: "0.5rem 0.75rem",
-                  backgroundColor: "#ffffff",
-                  border: "1px solid #d1d5db",
+                  backgroundColor: "var(--color-surface)",
+                  border: "1px solid var(--color-line)",
                   borderRadius: "4px",
                   cursor: "pointer",
                   fontSize: "0.875rem",
                   fontWeight: 500,
-                  color: "#374151",
+                  color: "var(--color-text-primary)",
                 }}
               >
                 Clear Filters
@@ -588,7 +608,7 @@ export const AuditPage: React.FC = () => {
               style={{
                 marginLeft: "auto",
                 fontSize: "0.8125rem",
-                color: "#6b7280",
+                color: "var(--color-text-secondary)",
                 fontWeight: 500,
               }}
             >
@@ -597,13 +617,14 @@ export const AuditPage: React.FC = () => {
           </div>
 
           <div
-            className="ag-theme-quartz"
+            className="ag-theme-quartz-dark"
             style={{
               width: "100%",
               height: "460px",
-              border: "1px solid #e5e7eb",
+              border: "1px solid var(--color-line)",
               borderRadius: "0 0 8px 8px",
               overflow: "hidden",
+              ...gridThemeStyle,
             }}
           >
             <AgGridReact<AuditEntry>

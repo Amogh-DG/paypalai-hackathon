@@ -29,21 +29,21 @@ export function getDecisionBadgeStyle(
   switch (decision.toLowerCase()) {
     case "allow":
       return {
-        bg: "#dcfce7",
-        color: "#166534",
-        border: "#86efac",
+        bg: "var(--color-green-bg)",
+        color: "var(--color-green)",
+        border: "var(--color-green)",
       };
     case "ask":
       return {
-        bg: "#fef3c7",
-        color: "#92400e",
-        border: "#fcd34d",
+        bg: "var(--color-amber-bg)",
+        color: "var(--color-amber)",
+        border: "var(--color-amber)",
       };
     case "block":
       return {
-        bg: "#fee2e2",
-        color: "#991b1b",
-        border: "#fca5a5",
+        bg: "var(--color-red-bg)",
+        color: "var(--color-red)",
+        border: "var(--color-red)",
       };
     default:
       return null;

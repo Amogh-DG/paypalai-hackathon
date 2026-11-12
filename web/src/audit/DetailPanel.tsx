@@ -30,10 +30,10 @@ export const DetailPanel: React.FC<DetailPanelProps> = ({
     <div
       style={{
         marginTop: "1.5rem",
-        border: "1px solid #d1d5db",
+        border: "1px solid var(--color-line)",
         borderRadius: "8px",
-        backgroundColor: "#ffffff",
-        boxShadow: "0 4px 6px -1px rgba(0, 0, 0, 0.1)",
+        backgroundColor: "var(--color-surface)",
+        boxShadow: "none",
         overflow: "hidden",
       }}
     >
@@ -43,8 +43,8 @@ export const DetailPanel: React.FC<DetailPanelProps> = ({
           justifyContent: "space-between",
           alignItems: "center",
           padding: "1rem 1.5rem",
-          backgroundColor: "#f9fafb",
-          borderBottom: "1px solid #e5e7eb",
+          backgroundColor: "var(--color-surface)",
+          borderBottom: "1px solid var(--color-line)",
         }}
       >
         <div style={{ display: "flex", alignItems: "center", gap: "0.75rem" }}>
@@ -53,7 +53,7 @@ export const DetailPanel: React.FC<DetailPanelProps> = ({
               margin: 0,
               fontSize: "1.125rem",
               fontWeight: 600,
-              color: "#111827",
+              color: "var(--color-text-primary)",
             }}
           >
             Audit Entry Details
@@ -62,7 +62,7 @@ export const DetailPanel: React.FC<DetailPanelProps> = ({
             style={{
               fontSize: "0.875rem",
               fontFamily: "monospace",
-              color: "#6b7280",
+              color: "var(--color-text-secondary)",
             }}
           >
             {entry.id}
@@ -73,13 +73,13 @@ export const DetailPanel: React.FC<DetailPanelProps> = ({
           onClick={onClose}
           style={{
             padding: "0.375rem 0.75rem",
-            backgroundColor: "#ffffff",
-            border: "1px solid #d1d5db",
+            backgroundColor: "var(--color-surface)",
+            border: "1px solid var(--color-line)",
             borderRadius: "4px",
             cursor: "pointer",
             fontWeight: 500,
             fontSize: "0.875rem",
-            color: "#374151",
+            color: "var(--color-text-primary)",
           }}
         >
           ✕ Close
@@ -94,9 +94,9 @@ export const DetailPanel: React.FC<DetailPanelProps> = ({
             gap: "1rem",
             marginBottom: "1.5rem",
             padding: "1rem",
-            backgroundColor: "#f9fafb",
+            backgroundColor: "var(--color-surface)",
             borderRadius: "6px",
-            border: "1px solid #e5e7eb",
+            border: "1px solid var(--color-line)",
           }}
         >
           <div>
@@ -104,7 +104,7 @@ export const DetailPanel: React.FC<DetailPanelProps> = ({
               style={{
                 fontSize: "0.75rem",
                 textTransform: "uppercase",
-                color: "#6b7280",
+                color: "var(--color-text-secondary)",
                 fontWeight: 600,
               }}
             >
@@ -116,8 +116,9 @@ export const DetailPanel: React.FC<DetailPanelProps> = ({
                   display: "inline-block",
                   padding: "2px 8px",
                   borderRadius: "4px",
-                  backgroundColor: "#e5e7eb",
-                  color: "#1f2937",
+                  backgroundColor: "var(--color-surface)",
+                  color: "var(--color-text-primary)",
+                  border: "1px solid var(--color-line)",
                   fontSize: "12px",
                   fontFamily: "monospace",
                   fontWeight: 600,
@@ -133,7 +134,7 @@ export const DetailPanel: React.FC<DetailPanelProps> = ({
               style={{
                 fontSize: "0.75rem",
                 textTransform: "uppercase",
-                color: "#6b7280",
+                color: "var(--color-text-secondary)",
                 fontWeight: 600,
               }}
             >
@@ -148,7 +149,7 @@ export const DetailPanel: React.FC<DetailPanelProps> = ({
                     background: "none",
                     border: "none",
                     padding: 0,
-                    color: "#0070ba",
+                    color: "var(--color-text-primary)",
                     textDecoration: "underline",
                     cursor: "pointer",
                     fontFamily: "monospace",
@@ -158,7 +159,7 @@ export const DetailPanel: React.FC<DetailPanelProps> = ({
                   {entry.proposalId}
                 </button>
               ) : (
-                <span style={{ color: "#9ca3af" }}>None</span>
+                <span style={{ color: "var(--color-text-tertiary)" }}>None</span>
               )}
             </div>
           </div>
@@ -168,7 +169,7 @@ export const DetailPanel: React.FC<DetailPanelProps> = ({
               style={{
                 fontSize: "0.75rem",
                 textTransform: "uppercase",
-                color: "#6b7280",
+                color: "var(--color-text-secondary)",
                 fontWeight: 600,
               }}
             >
@@ -192,7 +193,7 @@ export const DetailPanel: React.FC<DetailPanelProps> = ({
                   {entry.decision}
                 </span>
               ) : (
-                <span style={{ color: "#9ca3af", fontSize: "0.875rem" }}>
+                <span style={{ color: "var(--color-text-tertiary)", fontSize: "0.875rem" }}>
                   None
                 </span>
               )}
@@ -204,7 +205,7 @@ export const DetailPanel: React.FC<DetailPanelProps> = ({
               style={{
                 fontSize: "0.75rem",
                 textTransform: "uppercase",
-                color: "#6b7280",
+                color: "var(--color-text-secondary)",
                 fontWeight: 600,
               }}
             >
@@ -220,7 +221,7 @@ export const DetailPanel: React.FC<DetailPanelProps> = ({
               {entry.amount !== undefined ? (
                 formatAmount(entry.amount)
               ) : (
-                <span style={{ color: "#9ca3af", fontWeight: 400 }}>None</span>
+                <span style={{ color: "var(--color-text-tertiary)", fontWeight: 400 }}>None</span>
               )}
             </div>
           </div>
@@ -230,7 +231,7 @@ export const DetailPanel: React.FC<DetailPanelProps> = ({
               style={{
                 fontSize: "0.75rem",
                 textTransform: "uppercase",
-                color: "#6b7280",
+                color: "var(--color-text-secondary)",
                 fontWeight: 600,
               }}
             >
@@ -252,7 +253,7 @@ export const DetailPanel: React.FC<DetailPanelProps> = ({
               style={{
                 fontSize: "0.75rem",
                 textTransform: "uppercase",
-                color: "#6b7280",
+                color: "var(--color-text-secondary)",
                 fontWeight: 600,
               }}
             >
@@ -268,7 +269,7 @@ export const DetailPanel: React.FC<DetailPanelProps> = ({
               style={{
                 fontSize: "0.75rem",
                 textTransform: "uppercase",
-                color: "#6b7280",
+                color: "var(--color-text-secondary)",
                 fontWeight: 600,
               }}
             >
@@ -278,7 +279,7 @@ export const DetailPanel: React.FC<DetailPanelProps> = ({
               style={{
                 marginTop: "0.25rem",
                 fontSize: "0.9375rem",
-                color: "#111827",
+                color: "var(--color-text-primary)",
               }}
             >
               {entry.summary}
@@ -293,7 +294,7 @@ export const DetailPanel: React.FC<DetailPanelProps> = ({
                 margin: "0 0 0.75rem 0",
                 fontSize: "1rem",
                 fontWeight: 600,
-                color: "#1f2937",
+                color: "var(--color-text-primary)",
               }}
             >
               Policy Evaluation Rules
@@ -301,7 +302,7 @@ export const DetailPanel: React.FC<DetailPanelProps> = ({
             <div
               style={{
                 overflowX: "auto",
-                border: "1px solid #e5e7eb",
+                border: "1px solid var(--color-line)",
                 borderRadius: "6px",
               }}
             >
@@ -316,8 +317,9 @@ export const DetailPanel: React.FC<DetailPanelProps> = ({
                 <thead>
                   <tr
                     style={{
-                      backgroundColor: "#f3f4f6",
-                      borderBottom: "1px solid #e5e7eb",
+                      backgroundColor: "var(--color-surface-raised)",
+                      borderBottom: "1px solid var(--color-line)",
+                      color: "var(--color-text-primary)",
                     }}
                   >
                     <th style={{ padding: "0.625rem 0.75rem", width: "100px" }}>
@@ -338,11 +340,13 @@ export const DetailPanel: React.FC<DetailPanelProps> = ({
                     const isFailedAsk = !r.passed && r.severity === "ask";
 
                     const rowBg = isFailedBlock
-                      ? "#fef2f2"
+                      ? "var(--color-red-bg)"
                       : isFailedAsk
-                        ? "#fffbeb"
-                        : "#ffffff";
-                    const rowBorder = isFailedBlock ? "#fca5a5" : "#e5e7eb";
+                        ? "var(--color-amber-bg)"
+                        : "var(--color-surface)";
+                    const rowBorder = isFailedBlock
+                      ? "var(--color-red)"
+                      : "var(--color-line)";
 
                     return (
                       <tr
@@ -360,8 +364,8 @@ export const DetailPanel: React.FC<DetailPanelProps> = ({
                                 display: "inline-block",
                                 padding: "2px 6px",
                                 borderRadius: "4px",
-                                backgroundColor: "#dcfce7",
-                                color: "#166534",
+                                backgroundColor: "var(--color-green-bg)",
+                                color: "var(--color-green)",
                                 fontSize: "11px",
                                 fontWeight: 700,
                               }}
@@ -374,9 +378,9 @@ export const DetailPanel: React.FC<DetailPanelProps> = ({
                                 display: "inline-block",
                                 padding: "2px 6px",
                                 borderRadius: "4px",
-                                backgroundColor: "#fee2e2",
-                                color: "#991b1b",
-                                border: "1px solid #ef4444",
+                                backgroundColor: "var(--color-red-bg)",
+                                color: "var(--color-red)",
+                                border: "1px solid var(--color-red)",
                                 fontSize: "11px",
                                 fontWeight: 700,
                               }}
@@ -389,9 +393,9 @@ export const DetailPanel: React.FC<DetailPanelProps> = ({
                                 display: "inline-block",
                                 padding: "2px 6px",
                                 borderRadius: "4px",
-                                backgroundColor: "#fef3c7",
-                                color: "#92400e",
-                                border: "1px solid #f59e0b",
+                                backgroundColor: "var(--color-amber-bg)",
+                                color: "var(--color-amber)",
+                                border: "1px solid var(--color-amber)",
                                 fontSize: "11px",
                                 fontWeight: 700,
                               }}
@@ -404,7 +408,9 @@ export const DetailPanel: React.FC<DetailPanelProps> = ({
                           style={{
                             padding: "0.625rem 0.75rem",
                             fontFamily: "monospace",
-                            color: isFailedBlock ? "#991b1b" : "#1f2937",
+                            color: isFailedBlock
+                              ? "var(--color-red)"
+                              : "var(--color-text-primary)",
                           }}
                         >
                           {r.rule}
@@ -415,7 +421,9 @@ export const DetailPanel: React.FC<DetailPanelProps> = ({
                               textTransform: "uppercase",
                               fontSize: "11px",
                               fontWeight: 600,
-                              color: isFailedBlock ? "#b91c1c" : "#4b5563",
+                              color: isFailedBlock
+                                ? "var(--color-red)"
+                                : "var(--color-text-secondary)",
                             }}
                           >
                             {r.severity}
@@ -424,7 +432,9 @@ export const DetailPanel: React.FC<DetailPanelProps> = ({
                         <td
                           style={{
                             padding: "0.625rem 0.75rem",
-                            color: isFailedBlock ? "#991b1b" : "#374151",
+                            color: isFailedBlock
+                              ? "var(--color-red)"
+                              : "var(--color-text-primary)",
                           }}
                         >
                           {r.message}
@@ -445,7 +455,7 @@ export const DetailPanel: React.FC<DetailPanelProps> = ({
                 margin: "0 0 0.5rem 0",
                 fontSize: "1rem",
                 fontWeight: 600,
-                color: "#1f2937",
+                color: "var(--color-text-primary)",
               }}
             >
               Reasons
@@ -454,7 +464,7 @@ export const DetailPanel: React.FC<DetailPanelProps> = ({
               style={{
                 margin: 0,
                 paddingLeft: "1.5rem",
-                color: "#374151",
+                color: "var(--color-text-primary)",
                 fontSize: "0.875rem",
                 lineHeight: "1.5",
               }}
@@ -475,17 +485,17 @@ export const DetailPanel: React.FC<DetailPanelProps> = ({
                 margin: "0 0 0.5rem 0",
                 fontSize: "1rem",
                 fontWeight: 600,
-                color: "#1f2937",
+                color: "var(--color-text-primary)",
               }}
             >
               Additional Details
             </h4>
             <div
               style={{
-                border: "1px solid #e5e7eb",
+                border: "1px solid var(--color-line)",
                 borderRadius: "6px",
                 padding: "0.75rem 1rem",
-                backgroundColor: "#f9fafb",
+                backgroundColor: "var(--color-surface)",
               }}
             >
               {otherDetails.map(({ key, value }) => {
@@ -499,7 +509,12 @@ export const DetailPanel: React.FC<DetailPanelProps> = ({
                       fontSize: "0.875rem",
                     }}
                   >
-                    <div style={{ fontWeight: 600, color: "#374151" }}>
+                    <div
+                      style={{
+                        fontWeight: 600,
+                        color: "var(--color-text-primary)",
+                      }}
+                    >
                       {key}:
                     </div>
                     {isComplex ? (
@@ -507,8 +522,8 @@ export const DetailPanel: React.FC<DetailPanelProps> = ({
                         style={{
                           margin: "0.25rem 0 0 0",
                           padding: "0.5rem",
-                          backgroundColor: "#ffffff",
-                          border: "1px solid #e5e7eb",
+                          backgroundColor: "var(--color-surface)",
+                          border: "1px solid var(--color-line)",
                           borderRadius: "4px",
                           fontSize: "12px",
                           fontFamily: "monospace",
@@ -521,7 +536,7 @@ export const DetailPanel: React.FC<DetailPanelProps> = ({
                     ) : (
                       <div
                         style={{
-                          color: "#111827",
+                          color: "var(--color-text-primary)",
                           fontFamily:
                             typeof value === "string" && value.length > 20
                               ? "monospace"
